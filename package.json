@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -14,6 +15,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test:browser": "node tests/browser-check.mjs",
     "test:appearance": "node tests/appearance-browser.mjs",
+    "test:production": "node tests/production-browser.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

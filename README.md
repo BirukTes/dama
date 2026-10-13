@@ -62,11 +62,17 @@ Guided teaching, authored puzzles, offline installation, safe updates, save expo
 
 ## Hosting
 
-Cloudflare Pages is the selected hosting direction. For Git-integrated deployment, use a separate repository, Node.js 24, build command `npm run build`, and output directory `dist`.
+Connect [BirukTes/dama](https://github.com/BirukTes/dama) through Cloudflare **Pages → Connect to Git**. Use production branch `main`, framework preset `None`, build command `npm run build`, output directory `dist`, and leave the root directory blank. Node.js `24.21.0` is pinned in `.node-version`.
+
+See [the deployment guide](docs/CLOUDFLARE-DEPLOYMENT.md) for dashboard steps, verification, caching, and updates. `npm.cmd run test:production` checks the built game while `npm.cmd run preview -- --port 4173` is running.
 
 Direct Upload can accept the built folder or a release ZIP for manual testing. A Direct Upload project cannot later switch to Git integration; automatic deployments require a separate project. See [Cloudflare Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/).
 
 HTTP Wi-Fi previews are useful for phone testing; production PWA installation requires HTTPS. Hosting alone does not provide offline caching.
+
+## Licence
+
+The project code is licensed under [MIT](LICENSE), copyright 2026 Biruk Tes. Bundled DM Sans fonts retain their separate [SIL Open Font License](public/licenses/dm-sans-OFL.txt).
 
 ## Project files
 

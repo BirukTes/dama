@@ -141,6 +141,14 @@ export const template = /* HTML */ `
   </main>
   <footer>
     <span>Made for a moment of play.</span>
+    <a
+      class="source-link"
+      href="https://github.com/BirukTes/dama"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Source on GitHub ↗
+    </a>
     <span>
       FREE TO PLAY
       <span aria-hidden="true">·</span>
@@ -242,6 +250,18 @@ export const template = /* HTML */ `
       browser data removes it. Offline installation comes in a later milestone.
     </p>
     <button class="primary close">Done</button>
+    <div class="about-links" aria-label="About DA’MA">
+      <a href="https://github.com/BirukTes/dama" target="_blank" rel="noopener noreferrer">
+        Source &amp; issues on GitHub ↗
+      </a>
+      <a
+        href="https://github.com/BirukTes/dama/blob/main/LICENSE"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Code licensed under MIT ↗
+      </a>
+    </div>
   </dialog>
   <dialog id="restart">
     <div class="dialog-top">

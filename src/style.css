@@ -1184,6 +1184,36 @@ body.immersive .game-top {
 .reduce-motion * {
   transition: none !important;
 }
+a.source-link,
+.about-links a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+a.source-link:focus-visible,
+.about-links a:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 4px;
+}
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+.about-links {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  font-size: 12px;
+}
+@media (max-width: 620px) {
+  footer > span:first-child {
+    display: none;
+  }
+}
 /* In landscape Focus view, Pause contains the controls formerly in the header. */
 .masthead {
   grid-row: 1;
