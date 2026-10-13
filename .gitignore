@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.inspection/
+.inspection-deps/
+test-results/
+playwright-report/
+*.log
+releases/*.zip
