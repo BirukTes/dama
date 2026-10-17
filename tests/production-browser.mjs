@@ -40,6 +40,7 @@ try {
     ['islands', 9, 11, 5, 4],
   ]) {
     await page.locator(`label:has(#map-${id})`).click();
+    await page.locator('label:has(#track-free-play)').click();
     await page.locator('[data-rival="guardian"]').click();
     await page.locator('#start-button').click();
     if (await page.locator('#restart[open]').count()) await page.locator('#confirm-new').click();

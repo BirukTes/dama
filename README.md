@@ -33,6 +33,7 @@ With the development server running:
 npm.cmd run test:browser
 npm.cmd run test:appearance
 npm.cmd run test:journey
+npm.cmd run test:progression
 npm.cmd run test:sound
 npm.cmd run test:puzzles
 npm.cmd run test:maps
@@ -50,7 +51,7 @@ Provisional rules pass a blocked player and draw on mutual blocking, threefold r
 
 The prototype supports computer matches and two-player practice on one device. Practice undo restores the previous human turn in solo mode. The computer follows the same rules, uses bounded search in a worker, and pauses on Home or while menus are open. Gentle and Standard are heuristic difficulties rather than proven optimal play.
 
-Solo play follows a three-rival journey: Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Win against each rival to unlock the next; either challenge setting counts. Rival profiles show playing styles and local win/loss/draw records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
+Journey mode follows a separate three-rival journey on each map: Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Win against each rival to unlock the next; either challenge setting counts. Rival profiles show playing styles and that map’s local win/loss/draw records. All maps are available from the start; each unlocks rivals independently. Free play offers every rival immediately and supports a friend on the same device, without changing Journey records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
 
 All rivals now take immediate wins and avoid an immediate losing reply when possible, including on Gentle. Completed iterative search depths share a 24,000-node decision budget; equivalent moves can vary and repeated routes are discouraged when viable. Guardian values both sides' deliveries equally rather than treating an even score as a reason to settle for a draw. These are heuristic styles; human difficulty and phone performance still need feedback.
 
@@ -58,11 +59,11 @@ All rivals now take immediate wins and avoid an immediate losing reply when poss
 
 Home's board selector offers six maps: **Classic** (9 spots), **Crossroads** (9), **Ring Road** (9), **Twin Bridges** (12), **Long Crossing** (15), and **Islands** (9, including a passing bay). All use three pawns per side, opposite-edge delivery, and the same move/pass/draw rules. Larger maps use a wider layout. Both computer and local play support every map; undo, rematches, keyboard navigation and saves retain the correct graph. Older saves load as Classic.
 
-All five alternative maps are practice boards with every rival available. They do not change Classic statistics or unlocks. The six authored puzzles remain on Classic and save separately. See [the board catalogue and validation](docs/BOARD-MAPS.md) for shapes, analysis and playtesting limits, and [the original Crossroads delivery notes](docs/CROSSROADS.md).
+All six maps have independent Journey records and rival unlocks. Free play makes every rival available on any map without affecting those records. Existing Classic progress is preserved; older alternative-board practice saves remain Free play. The six authored puzzles remain on Classic and save separately. See [the game structure](docs/GAME-STRUCTURE.md) and [the board catalogue and validation](docs/BOARD-MAPS.md) for shapes, analysis and playtesting limits, and [the original Crossroads delivery notes](docs/CROSSROADS.md).
 
 ## Puzzles
 
-Home's **Puzzles** button opens six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
+Home's **Puzzles** button opens the **Classic · First steps** pack of six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
 
 Hints give a clue and a verified next move in a dialog. Completion records distinguish hinted and unassisted solutions, with best move counts. Retry and next-puzzle actions are available in results. Attempts save separately from regular matches, so trying a puzzle preserves an unfinished solo or local game. Return Home to continue that match; select the saved puzzle to resume its attempt. Puzzles do not unlock rivals or add to rival statistics.
 

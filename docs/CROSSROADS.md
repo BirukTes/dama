@@ -1,5 +1,7 @@
 # Crossroads: first alternative board
 
+These are the original delivery notes. The later [game structure](GAME-STRUCTURE.md) adds independent Journey progression to every map and keeps unrestricted rivals in Free play.
+
 ## Delivery plan
 
 1. Keep the original nine positions, three pawns per side, opposite-edge delivery, backward movement, pass and draw rules.

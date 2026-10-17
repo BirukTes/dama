@@ -72,6 +72,7 @@ for (const viewport of [
   await page.setViewportSize(viewport);
   await fits(`home ${viewport.width}x${viewport.height}`, [
     '#home-button',
+    '#track-select',
     '#lobby-title',
     '#opponent-cards',
     '#opponent-profile',
@@ -82,7 +83,7 @@ for (const viewport of [
     '#help-button',
   ]);
   // The segments themselves must fit the border, not merely the outer control.
-  for (const selector of ['#difficulty-select', '#map-select']) {
+  for (const selector of ['#difficulty-select', '#map-select', '#track-select']) {
     const control = await page.locator(selector).boundingBox();
     for (const segment of await page.locator(`${selector} label > span`).all()) {
       const box = await segment.boundingBox();

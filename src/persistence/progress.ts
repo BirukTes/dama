@@ -1,5 +1,14 @@
 import { opponents, type OpponentId } from '../game/opponents';
 import type { Session } from './save';
+import type { MapId } from '../game/maps';
+
+const storageKey = (map: MapId) =>
+  map === 'classic' ? 'dama-progress-v1' : `dama-progress-${map}-v1`;
+// Older alternative-board matches were untracked practice. Keep them that way.
+export const isJourney = (s: Session) =>
+  s.mode === 'solo' &&
+  !s.puzzleId &&
+  (s.track === 'journey' || (s.track === undefined && (s.state.map ?? 'classic') === 'classic'));
 
 export interface Progress {
   wins: Record<OpponentId, number>;
@@ -15,9 +24,9 @@ export function emptyProgress(): Progress {
     recorded: [],
   };
 }
-export function loadProgress(): Progress {
+export function loadProgress(map: MapId = 'classic'): Progress {
   try {
-    const p = JSON.parse(localStorage.getItem('dama-progress-v1') ?? 'null');
+    const p = JSON.parse(localStorage.getItem(storageKey(map)) ?? 'null');
     if (
       !p ||
       !['wins', 'losses', 'draws'].every((field) =>
@@ -38,9 +47,7 @@ export function unlocked(p: Progress, id: OpponentId): boolean {
 }
 export function recordResult(p: Progress, session: Session): Progress {
   if (
-    session.mode !== 'solo' ||
-    (session.state.map ?? 'classic') !== 'classic' ||
-    session.puzzleId !== undefined ||
+    !isJourney(session) ||
     !session.state.result ||
     !session.matchId ||
     p.recorded.includes(session.matchId)
@@ -55,9 +62,9 @@ export function recordResult(p: Progress, session: Session): Progress {
     recorded: [...p.recorded.slice(-255), session.matchId],
   };
 }
-export function saveProgress(p: Progress): boolean {
+export function saveProgress(p: Progress, map: MapId = 'classic'): boolean {
   try {
-    localStorage.setItem('dama-progress-v1', JSON.stringify(p));
+    localStorage.setItem(storageKey(map), JSON.stringify(p));
     return true;
   } catch {
     return false;

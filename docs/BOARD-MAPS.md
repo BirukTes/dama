@@ -1,6 +1,6 @@
 # Board maps
 
-Choose a map on Home, then a rival or a friend. Classic retains the rival journey; every other map is optional practice with all three rivals available. Changing the choice only affects a new match. An unfinished match requires confirmation before replacement. Rematches retain the map and alternate starters. Puzzles remain Classic.
+Choose a map on Home, then a rival or a friend. Journey mode gives every map its own Coral → Runner → Guardian progression. All maps are available from the start. Free play makes every rival available and excludes its results from Journey records. Changing the choice only affects a new match. An unfinished match requires confirmation before replacement. Rematches retain the map and alternate starters. Puzzles remain Classic.
 
 Every map has three pawns per side. Blue starts on the right and delivers to any of the three left-edge goals; the rival does the reverse. Follow one visible connection per turn. Deliveries remove pawns, backwards moves are legal, blocked turns pass, and repetition/100-turn draws still apply. Larger boards add manoeuvring space rather than extra pawns.
 
@@ -32,8 +32,8 @@ Baseline graph analysis (`npm.cmd run analyze -- <map-id>`) gives:
 | long-crossing |             105,898 |                        580 |                         0 |               54 | Draw                                  |
 | islands       |               1,856 |                         34 |                         0 |              144 | Draw                                  |
 
-The baseline omits repetition history and turn limits, classifying indefinite cycles as draws. These results establish graph reachability, not human difficulty or replay quality. A perfect baseline draw is also the case for Classic. Alternative-map rival strength remains provisional; playtest queueing, repetitive defence, match length and Guardian response time on physical phones before attaching progression to these maps.
+The baseline omits repetition history and turn limits, classifying indefinite cycles as draws. These results establish graph reachability, not human difficulty or replay quality. A perfect baseline draw is also the case for Classic. Alternative-map rival strength remains provisional; playtest queueing, repetitive defence, match length and Guardian response time on physical phones. Journey progression is available on every map; it does not establish equal difficulty across maps.
 
 `npm.cmd run test:maps` checks the original Crossroads flow and all four additions in Edge: direct dragging, a real Guardian worker reply, undo/reload, complete local games, map choice containment, and separate touch targets in Standard/Focus at 320×568, 390×844, 761×752, 844×390 and 1366×768. General appearance, journey, audio and puzzle suites cover regressions. Browser emulation does not replace Safari and physical-device testing.
 
-Tutorial, offline installation, new map-specific puzzles, public deployment and competitive balance calibration are separate follow-ups.
+Tutorial, offline installation, new map-specific puzzle packs, public deployment and competitive balance calibration are separate follow-ups.

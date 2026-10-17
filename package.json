@@ -22,7 +22,8 @@
     "test:maps": "node tests/maps-browser.mjs && node tests/all-maps-browser.mjs",
     "test:production": "node tests/production-browser.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:progression": "node tests/progression-browser.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

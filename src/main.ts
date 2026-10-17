@@ -6,9 +6,15 @@ import './style.css';
 import { initialState, legalMoves, applyMove, other, type Move, type Side } from './game/rules';
 import { loadSession, saveSession, type Session } from './persistence/save';
 import { template, boardNodes, boardLines } from './ui/template';
-import { mapFor, nextSpot, isMapId, type MapId } from './game/maps';
+import { maps, mapFor, nextSpot, isMapId, type MapId } from './game/maps';
 import { opponents, opponentFor, isOpponent, type OpponentId } from './game/opponents';
-import { loadProgress, saveProgress, recordResult, unlocked } from './persistence/progress';
+import {
+  loadProgress,
+  saveProgress,
+  recordResult,
+  unlocked,
+  isJourney,
+} from './persistence/progress';
 import { enableDragging } from './ui/drag';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
@@ -44,7 +50,11 @@ let session: Session = restored ?? {
 };
 session.opponent ??= 'coral';
 session.matchId ??= createMatchId();
-let progress = loadProgress();
+const journeys = Object.fromEntries(
+  Object.values(maps).map((m) => [m.id, loadProgress(m.id)]),
+) as Record<MapId, ReturnType<typeof loadProgress>>;
+const selectedTrack = () =>
+  $<HTMLInputElement>('input[name="play-track"]:checked').value as NonNullable<Session['track']>;
 let puzzleProgress = loadPuzzleProgress();
 let chosenOpponent: OpponentId = session.opponent;
 let renderedMap: MapId | null = null;
@@ -84,6 +94,7 @@ $<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
 $<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;
 try {
   const choice = JSON.parse(localStorage.getItem('dama-home-choice-v1') ?? '{}');
+  if (choice.track === 'free-play') $<HTMLInputElement>('#track-free-play').checked = true;
   if (isOpponent(choice.opponent)) chosenOpponent = choice.opponent;
   if (isMapId(choice.map)) $<HTMLInputElement>(`#map-${choice.map}`).checked = true;
   if (['gentle', 'standard'].includes(choice.difficulty))
@@ -253,7 +264,7 @@ function restorePassNotice() {
 function render() {
   const s = session.state;
   const map = mapFor(s.map);
-  const practice = map.id !== 'classic';
+  const practice = !isJourney(session);
   document.body.classList.toggle('wide-map', map.wide);
   if (renderedMap !== map.id) {
     $('#board svg').innerHTML = boardLines(map.id);
@@ -261,7 +272,8 @@ function render() {
     $('#board').insertAdjacentHTML('beforeend', boardNodes(map.id));
     renderedMap = map.id;
   }
-  $('#board-map-label').textContent = `${map.name}${practice ? ' · Practice' : ''}`;
+  $('#board-map-label').textContent =
+    `${map.name}${puzzleFor(session.puzzleId ?? '') ? ' · Puzzle' : practice ? ' · Free play' : ' · Journey'}`;
   $('#board').setAttribute(
     'aria-label',
     `${map.name} board. ${map.description} Drag a pawn, or tap it then a connected empty spot.`,
@@ -292,10 +304,11 @@ function render() {
   names.coral = session.mode === 'solo' ? opponent.name : 'Coral';
   document.body.dataset.opponent =
     session.mode === 'solo' && screen === 'play' ? opponent.id : 'coral';
+  const progress = journeys[map.id];
   const updated = recordResult(progress, session);
   if (updated !== progress) {
-    progress = updated;
-    if (!saveProgress(progress)) storageAvailable = false;
+    journeys[map.id] = updated;
+    if (!saveProgress(updated, map.id)) storageAvailable = false;
   }
   const humanTurn = session.mode === 'local' || s.turn === 'blue';
   $('#home-screen').hidden = screen !== 'home';
@@ -314,7 +327,7 @@ function render() {
   $('#mode-label').textContent = puzzle
     ? `PUZZLE ${puzzles.indexOf(puzzle) + 1} · ${puzzle.title.toUpperCase()}`
     : session.mode === 'solo'
-      ? `${map.name.toUpperCase()} · ${practice ? 'PRACTICE' : session.difficulty.toUpperCase()}`
+      ? `${map.name.toUpperCase()} · ${practice ? 'FREE PLAY' : 'JOURNEY'} · ${session.difficulty.toUpperCase()}`
       : `${map.name.toUpperCase()} · TWO PLAYERS`;
   $('#coral-label').textContent =
     session.mode === 'solo' ? `${opponent.symbol} ${opponent.name.toUpperCase()}` : 'CORAL';
@@ -396,19 +409,24 @@ function render() {
       `${session.mode === 'solo' ? 'You' : 'Blue'} ${s.delivered.blue} / 3 · ${names.coral} ${s.delivered.coral} / 3`;
     const next = opponents[opponents.findIndex((o) => o.id === opponent.id) + 1];
     const won = session.mode === 'solo' && winner === 'blue';
-    $('#next-opponent').hidden = !won || !next || practice;
-    $('#next-opponent').textContent = next ? `Meet ${next.name} →` : 'Next challenge →';
+    const nextMap = Object.values(maps).find(
+      (m) => m.id !== map.id && journeys[m.id].wins.guardian === 0,
+    );
+    $('#next-opponent').hidden = !won || practice || (!next && !nextMap);
+    $('#next-opponent').textContent = next
+      ? `Meet ${next.name} →`
+      : `Explore ${nextMap?.name ?? 'another map'} →`;
     $('#journey-result').hidden = session.mode !== 'solo';
     $('#journey-result').textContent = won
       ? next
         ? `You beat ${opponent.name}! ${next.name} is ready: ${next.description}`
-        : 'You beat all three rivals! Replay a favourite or try the Standard setting.'
+        : `${map.name} journey complete! Try another map or replay a favourite.`
       : winner
         ? `${opponent.name} won this round. ${opponent.tip}`
         : `Try a different route next time. ${opponent.tip}`;
     if (practice)
       $('#journey-result').textContent =
-        `${map.name} practice. Your Classic rival records and unlocks are unchanged. Try a different route or rematch.`;
+        `${map.name} · Free play. Results do not affect Journey. Try a different rival or rematch.`;
   }
   $('#next-puzzle').hidden =
     !puzzle || outcome !== 'solved' || puzzles.indexOf(puzzle) === puzzles.length - 1;
@@ -771,6 +789,7 @@ function saveHomeChoice() {
         opponent: chosenOpponent,
         map: selectedMap(),
         difficulty: selectedDifficulty(),
+        track: selectedTrack(),
       }),
     );
   } catch {
@@ -789,25 +808,35 @@ function requestHomeMatch(mode: Session['mode']) {
 }
 function renderOpponents() {
   const map = mapFor(selectedMap());
-  const practice = map.id !== 'classic';
+  const practice = selectedTrack() === 'free-play';
+  const progress = journeys[map.id];
   $('#map-select').title = map.description;
+  for (const m of Object.values(maps)) {
+    const beaten = opponents.filter((o) => journeys[m.id].wins[o.id] > 0).length;
+    const badge = $(`[data-map-progress="${m.id}"]`);
+    badge.hidden = practice;
+    badge.textContent = `${beaten} / 3${beaten === 3 ? ' ✓' : ''}`;
+    badge.closest('label')!.title =
+      `${m.description}${practice ? '' : ` ${beaten} of 3 rivals beaten.`}`;
+  }
+
   if (!practice && !unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
   $('#journey-progress').textContent = practice
-    ? `${map.name} · Practice board · All rivals available. Classic progress is kept.`
-    : `${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
+    ? `${map.name} · Free play · All rivals available. Results do not affect Journey.`
+    : `${map.name} · ${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
   $('#opponent-cards').innerHTML = opponents
     .map((o, index) => {
       const available = practice || unlocked(progress, o.id),
         wins = progress.wins[o.id];
       return `<button class="opponent-card" data-rival="${o.id}" aria-pressed="${chosenOpponent === o.id}" ${available ? '' : 'disabled'}>
       <span class="opponent-symbol rival-${o.id}" aria-hidden="true">${o.symbol}</span><strong>${o.name}</strong><small>${o.level}</small>
-      <span class="rival-progress">${practice ? 'Practice match' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Ready to challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
+      <span class="rival-progress">${practice ? 'Free play' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Ready to challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
     })
     .join('');
   const o = opponentFor(chosenOpponent);
   $('#opponent-profile').innerHTML =
-    `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${practice ? map.description : o.description}</p><small>${practice ? 'Practice · Classic records are kept separately.' : `${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws`}</small>`;
+    `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${practice ? `${map.name} · Free play · No Journey records` : `${map.name} · ${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws`}</small>`;
   $('#start-button').textContent = `Play ${o.name} →`;
   $('#puzzles-button').textContent =
     `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length}`;
@@ -821,18 +850,39 @@ $('#opponent-cards').addEventListener('click', (event) => {
   $<HTMLButtonElement>(`[data-rival="${chosenOpponent}"]`).focus();
 });
 $('#next-opponent').addEventListener('click', () => {
-  const next = opponents[opponents.findIndex((o) => o.id === session.opponent) + 1];
-  if (!next || !unlocked(progress, next.id)) return;
-  chosenOpponent = next.id;
+  if (!isJourney(session)) return;
+  const map = session.state.map ?? 'classic';
+  const next = opponents[opponents.findIndex((o) => o.id === opponentFor(session.opponent).id) + 1];
+  const target = next
+    ? mapFor(map)
+    : Object.values(maps).find((m) => m.id !== map && journeys[m.id].wins.guardian === 0);
+  if (!target || (next && !unlocked(journeys[map], next.id))) return;
+  $<HTMLInputElement>(`#map-${target.id}`).checked = true;
+  $<HTMLInputElement>('#track-journey').checked = true;
+  chosenOpponent =
+    next?.id ??
+    opponents.find(
+      (o) => unlocked(journeys[target.id], o.id) && journeys[target.id].wins[o.id] === 0,
+    )?.id ??
+    'coral';
   saveHomeChoice();
   setScreen('home');
+});
+$('#track-select').addEventListener('change', () => {
+  render();
+  saveHomeChoice();
 });
 $('#difficulty-select').addEventListener('change', saveHomeChoice);
 $('#map-select').addEventListener('change', () => {
   render();
   saveHomeChoice();
 });
-$('#local-button').addEventListener('click', () => requestHomeMatch('local'));
+$('#local-button').addEventListener('click', () => {
+  $<HTMLInputElement>('#track-free-play').checked = true;
+  saveHomeChoice();
+  renderOpponents();
+  requestHomeMatch('local');
+});
 $('#start-button').addEventListener('click', () => requestHomeMatch('solo'));
 $('#continue-button').addEventListener('click', () => {
   resultDismissed = false;
@@ -897,6 +947,7 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
     state: initialState(starter, fresh ? selectedMap() : session.state.map),
     starter,
     mode: fresh || session.mode,
+    track: fresh ? (fresh === 'local' ? 'free-play' : selectedTrack()) : session.track,
     difficulty: fresh ? selectedDifficulty() : session.difficulty,
     undo: [],
     opponent: fresh ? chosenOpponent : session.opponent,

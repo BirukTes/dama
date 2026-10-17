@@ -189,12 +189,12 @@ try {
         () => JSON.parse(localStorage.getItem('dama-session-v1')).state.turns >= 2,
       );
       await settled();
-    } else assert.equal(await page.locator('#next-opponent').isVisible(), false);
+    } else assert.match(await page.locator('#next-opponent').textContent(), /Explore Crossroads/);
   }
   await page.locator('#result-panel .go-home').click();
   assert.equal(
     await page.locator('#journey-progress').textContent(),
-    '3 / 3 rivals beaten · Journey complete. Replay any rival. Progress saves on this browser.',
+    'Classic · 3 / 3 rivals beaten · Journey complete. Replay any rival. Progress saves on this browser.',
   );
   await page.screenshot({ path: '.inspection/journey-complete.png' });
   assert.deepEqual(errors, []);

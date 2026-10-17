@@ -6,6 +6,7 @@ import { isMapId, mapFor } from '../game/maps';
 export interface Session {
   state: State;
   mode: 'solo' | 'local';
+  track?: 'journey' | 'free-play';
   difficulty: Difficulty;
   undo: State[];
   starter: 'blue' | 'coral';
@@ -74,6 +75,7 @@ export function loadSession(key = storageKey): Session | null {
       data.version !== 1 ||
       !validState(data.state) ||
       !['solo', 'local'].includes(data.mode) ||
+      (data.track !== undefined && !['journey', 'free-play'].includes(data.track)) ||
       !['gentle', 'standard'].includes(data.difficulty) ||
       !['blue', 'coral'].includes(data.starter) ||
       (data.opponent !== undefined && !isOpponent(data.opponent)) ||

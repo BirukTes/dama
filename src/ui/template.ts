@@ -37,7 +37,30 @@ export const template = /* HTML */ `
       <div class="lobby-heading">
         <div>
           <p class="eyebrow">THREE PAWNS. FIND YOUR WAY ACROSS.</p>
-          <h1 id="lobby-title">Who’s next?</h1>
+          <h1 id="lobby-title" class="sr-only">Choose how to play</h1>
+          <div class="view-switch" id="track-select" role="radiogroup" aria-label="Play mode">
+            <label>
+              <input
+                class="sr-only"
+                type="radio"
+                name="play-track"
+                id="track-journey"
+                value="journey"
+                checked
+              />
+              <span>Journey</span>
+            </label>
+            <label>
+              <input
+                class="sr-only"
+                type="radio"
+                name="play-track"
+                id="track-free-play"
+                value="free-play"
+              />
+              <span>Free play</span>
+            </label>
+          </div>
         </div>
         <button class="primary" id="continue-button" hidden>
           <span id="continue-label">Continue match</span>
@@ -59,7 +82,7 @@ export const template = /* HTML */ `
               ${Object.values(maps)
                 .map(
                   (m) =>
-                    `<label><input class="sr-only" type="radio" name="board-map" id="map-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span>${m.name}</span></label>`,
+                    `<label><input class="sr-only" type="radio" name="board-map" id="map-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span>${m.name}<small data-map-progress="${m.id}"></small></span></label>`,
                 )
                 .join('')}
             </div>
@@ -252,10 +275,11 @@ export const template = /* HTML */ `
       <p class="eyebrow">SIX WAYS TO THINK</p>
       <button class="quiet close" aria-label="Close puzzles">Close ×</button>
     </div>
-    <h2 id="puzzles-title">Small board. New challenge.</h2>
+    <h2 id="puzzles-title">Classic · First steps</h2>
     <p class="dialog-note">
       Play Blue. Deliver all remaining pawns within the move limit. Only your moves count; Coral
-      defends. Puzzles save separately from your match. All six are free to try.
+      defends. Six challenges, from one to four moves. Puzzles save separately from your match. All
+      six are free to try.
     </p>
     <div id="puzzle-list" class="puzzle-list"></div>
   </dialog>

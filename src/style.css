@@ -1999,3 +1999,72 @@ body.wide-map .board {
     width: 100%;
   }
 }
+
+/* Home modes replace the decorative title without adding another menu screen. */
+#track-select {
+  width: 210px;
+}
+#track-select label {
+  flex: 1;
+}
+#track-select span {
+  width: 100%;
+  font-size: 15px;
+  text-align: center;
+}
+#map-select span {
+  flex-direction: column;
+  gap: 1px;
+}
+#map-select small {
+  font-size: 9px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+@media (max-width: 620px), (orientation: landscape) and (max-height: 560px) {
+  #track-select {
+    width: 166px;
+  }
+  #track-select span {
+    font-size: 12px;
+    padding: 7px 8px;
+  }
+  .lobby-heading {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+}
+@media (max-width: 360px) {
+  #track-select {
+    width: 146px;
+  }
+  #track-select span {
+    font-size: 11px;
+    padding-inline: 6px;
+  }
+  .lobby-heading #continue-button {
+    padding-inline: 8px;
+  }
+}
+@media (orientation: landscape) and (max-height: 440px) and (min-width: 620px) {
+  #home-screen {
+    padding-block: 4px;
+  }
+  .lobby-heading {
+    margin-bottom: 4px;
+  }
+  .play-lobby .opponent-card {
+    min-height: 44px;
+  }
+}
+@media (orientation: landscape) and (max-height: 440px) and (min-width: 620px) {
+  .play-lobby .opponent-cards {
+    margin-bottom: 4px;
+  }
+  .play-lobby .opponent-card {
+    padding: 4px 10px;
+  }
+  .play-lobby .opponent-card[aria-pressed='true'] {
+    padding: 3px 9px;
+  }
+}

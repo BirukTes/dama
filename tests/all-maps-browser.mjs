@@ -23,6 +23,7 @@ try {
       );
     });
     await page.goto('http://localhost:5173');
+    await page.locator('label:has(#track-free-play)').click();
     await page.locator(`label:has(#map-${id})`).click();
     assert.equal(await page.locator('[data-rival="guardian"]').isDisabled(), false);
     for (const viewport of viewports) {
