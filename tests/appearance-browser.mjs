@@ -65,6 +65,7 @@ for (const viewport of [
   { width: 320, height: 568 },
   { width: 375, height: 667 },
   { width: 390, height: 844 },
+  { width: 761, height: 752 },
   { width: 844, height: 390 },
   { width: 1366, height: 768 },
 ]) {
@@ -80,6 +81,17 @@ for (const viewport of [
     '#local-button',
     '#help-button',
   ]);
+  // The segments themselves must fit the border, not merely the outer control.
+  for (const selector of ['#difficulty-select', '#map-select']) {
+    const control = await page.locator(selector).boundingBox();
+    for (const segment of await page.locator(`${selector} label > span`).all()) {
+      const box = await segment.boundingBox();
+      assert.ok(
+        box.x >= control.x && box.x + box.width <= control.x + control.width,
+        `${selector} segment escapes its border at ${viewport.width}: ${JSON.stringify({ box, control })}`,
+      );
+    }
+  }
   await page.locator('#continue-button').click();
   await fits(`standard ${viewport.width}x${viewport.height}`, [
     '#board',

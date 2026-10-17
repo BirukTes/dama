@@ -1894,13 +1894,15 @@ body.puzzling .puzzle-clue {
 }
 /* Two explicit choices use the same segmented radio control as Board view. */
 .lobby-controls {
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
   grid-template-areas: 'map map' 'setting puzzles' 'play play' 'friend friend';
 }
 .lobby-controls .view-switch {
   width: 100%;
 }
 .lobby-controls .view-switch label {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .lobby-controls .view-switch span {
   width: 100%;
