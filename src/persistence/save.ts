@@ -1,8 +1,8 @@
-import { goals, key, type State } from '../game/rules';
+import { goalsFor, key, type State } from '../game/rules';
 import type { Difficulty } from '../ai/search';
 import { isOpponent, type OpponentId } from '../game/opponents';
 import { puzzleFor } from '../game/puzzles';
-import { isMapId } from '../game/maps';
+import { isMapId, mapFor } from '../game/maps';
 export interface Session {
   state: State;
   mode: 'solo' | 'local';
@@ -21,7 +21,7 @@ export function validState(value: unknown): value is State {
   if (s.map !== undefined && !isMapId(s.map)) return false;
   if (
     !Array.isArray(s.board) ||
-    s.board.length !== 9 ||
+    s.board.length !== mapFor(s.map).points.length ||
     !s.board.every((p) => p === null || p === 'blue' || p === 'coral')
   )
     return false;
@@ -35,7 +35,7 @@ export function validState(value: unknown): value is State {
       s.board.filter((p) => p === side).length + s.delivered[side] !== 3
     )
       return false;
-    if (goals[side].some((n) => s.board[n] === side)) return false;
+    if (goalsFor(s)[side].some((n) => s.board[n] === side)) return false;
   }
   if (
     !Array.isArray(s.history) ||
@@ -44,10 +44,10 @@ export function validState(value: unknown): value is State {
     !s.history.every(
       (k) =>
         typeof k === 'string' &&
-        /^[bc.]{9}:[0-3]:[0-3]:(blue|coral)$/.test(
-          s.map === 'crossroads' ? k.replace(/^crossroads\|/, '') : k,
-        ) &&
-        k.startsWith('crossroads|') === (s.map === 'crossroads'),
+        k.startsWith(s.map && s.map !== 'classic' ? `${s.map}|` : '') &&
+        new RegExp(`^[bc.]{${s.board.length}}:[0-3]:[0-3]:(blue|coral)$`).test(
+          k.slice(s.map && s.map !== 'classic' ? s.map.length + 1 : 0),
+        ),
     ) ||
     s.history.at(-1) !== key(s)
   )
@@ -79,7 +79,7 @@ export function loadSession(key = storageKey): Session | null {
       (data.opponent !== undefined && !isOpponent(data.opponent)) ||
       (data.matchId !== undefined && typeof data.matchId !== 'string') ||
       (data.puzzleId !== undefined && (!puzzleFor(data.puzzleId) || data.mode !== 'solo')) ||
-      (data.puzzleId !== undefined && data.state.map === 'crossroads') ||
+      (data.puzzleId !== undefined && (data.state.map ?? 'classic') !== 'classic') ||
       (data.puzzleHinted !== undefined && typeof data.puzzleHinted !== 'boolean') ||
       !Array.isArray(data.undo) ||
       data.undo.length > 100 ||

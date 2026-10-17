@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { maps } from '../src/game/maps';
+import { maps, nextSpot } from '../src/game/maps';
 import { initialState, legalMoves, applyMove, key, type State } from '../src/game/rules';
 import { chooseMove } from '../src/ai/search';
 import { validState, saveSession, loadSession, type Session } from '../src/persistence/save';
@@ -88,5 +88,123 @@ describe('Crossroads practice map', () => {
     for (const puzzle of puzzles) expect(puzzleState(puzzle).map).toBeUndefined();
     saveSession({ ...s, puzzleId: puzzles[0].id });
     expect(loadSession('dama-puzzle-session-v1')).toBeNull();
+  });
+});
+
+describe.each(Object.values(maps))('$name board', (map) => {
+  it('allows both colours to win from the real starting position under the full rules', () => {
+    const initial = initialState('blue', map.id),
+      queue = [initial],
+      seen = new Set([key(initial)]),
+      winners = new Set<string>();
+    for (let i = 0; i < queue.length && winners.size < 2; i++) {
+      const s = queue[i];
+      if (s.result) {
+        if ('winner' in s.result) winners.add(s.result.winner);
+        continue;
+      }
+      for (const move of legalMoves(s)) {
+        const next = applyMove(s, move),
+          k = key(next);
+        if (!seen.has(k)) {
+          seen.add(k);
+          queue.push(next);
+        }
+      }
+    }
+    expect([...winners].sort()).toEqual(['blue', 'coral']);
+  }, 30000);
+  it('has a connected graph, distinct starts and legal delivery approaches for both sides', () => {
+    const seen = new Set([0]),
+      queue = [0];
+    for (let i = 0; i < queue.length; i++)
+      for (const n of map.neighbours[queue[i]])
+        if (!seen.has(n)) {
+          seen.add(n);
+          queue.push(n);
+        }
+    expect(seen.size).toBe(map.points.length);
+    expect(new Set(map.edges.map(([a, b]) => [a, b].sort((x, y) => x - y).join(':'))).size).toBe(
+      map.edges.length,
+    );
+    for (const [a, b] of map.edges) {
+      expect(map.neighbours[a]).toContain(b);
+      expect(map.neighbours[b]).toContain(a);
+    }
+    for (const side of ['blue', 'coral'] as const) {
+      expect(map.starts[side]).toHaveLength(3);
+      const s = initialState(side, map.id);
+      expect(validState(s)).toBe(true);
+      const goal = map.goals[side].find((n) =>
+        map.neighbours[n].some((m) => !map.goals[side].includes(m)),
+      )!;
+      const from = map.neighbours[goal].find((n) => !map.goals[side].includes(n))!;
+      s.board.fill(null);
+      s.board[from] = side;
+      s.delivered = { blue: 2, coral: 2 };
+      const enemy = side === 'blue' ? 'coral' : 'blue';
+      const enemySpot = map.points.findIndex(
+        (_, n) => n !== from && n !== goal && !map.goals[enemy].includes(n),
+      );
+      s.board[enemySpot] = enemy;
+      s.history = [key(s)];
+      expect(validState(s)).toBe(true);
+      const win = applyMove(s, { from, to: goal });
+      expect(win.result).toEqual({ winner: side });
+      expect(validState(win)).toBe(true);
+    }
+    for (let n = 0; n < map.points.length; n++)
+      for (const arrow of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) {
+        expect(nextSpot(map.id, n, arrow)).toBeGreaterThanOrEqual(0);
+        expect(nextSpot(map.id, n, arrow)).toBeLessThan(map.points.length);
+      }
+  });
+  it('finishes seeded games with legal computer moves and valid saves for every rival and starter', () => {
+    let seed = 90210;
+    const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
+    for (const opponent of ['coral', 'runner', 'guardian'] as const)
+      for (const start of ['blue', 'coral'] as const) {
+        let state = initialState(start, map.id);
+        while (!state.result) {
+          const moves = legalMoves(state);
+          const move =
+            state.turn === 'coral'
+              ? chooseMove(state, 'standard', random, opponent)!
+              : moves[Math.floor(random() * moves.length)];
+          expect(moves).toContainEqual(move);
+          state = applyMove(state, move);
+          expect(validState(state)).toBe(true);
+        }
+        expect(state.turns).toBeLessThanOrEqual(101);
+      }
+  }, 30000);
+  it('round-trips saves while rejecting wrong sizes and mixed maps', () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+    });
+    const s: Session = {
+      state: initialState('blue', map.id),
+      undo: [],
+      mode: 'solo',
+      starter: 'blue',
+      difficulty: 'standard',
+    };
+    saveSession(s);
+    expect(loadSession()?.state).toEqual(s.state);
+    expect(validState({ ...s.state, board: s.state.board.slice(1) })).toBe(false);
+    if (map.id !== 'classic') {
+      saveSession({ ...s, undo: [initialState()] });
+      expect(loadSession()).toBeNull();
+      const progress = emptyProgress();
+      expect(
+        recordResult(progress, {
+          ...s,
+          state: { ...s.state, result: { winner: 'blue' } },
+          matchId: 'practice',
+        }),
+      ).toBe(progress);
+    }
   });
 });

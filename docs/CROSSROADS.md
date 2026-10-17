@@ -13,7 +13,7 @@ This scope is implemented locally on 17 October 2026. Tutorial, offline installa
 
 ## How to play
 
-Select **Crossroads** in Home's **Classic | Crossroads** radio control, then Play a rival or Play with a friend. The adjacent **Gentle | Standard** control sets difficulty. Both choices remain visible, highlight the active option, remember the preference, and support keyboard arrows. Pawns move one horizontal or vertical connection into an empty spot. Corner pawns must go along an edge before reaching the central junction; centre pawns cannot deliver diagonally. Dragging, tapping and keyboard controls work as before.
+Select **Crossroads** in Home's board-map radio grid, then Play a rival or Play with a friend. The adjacent **Gentle | Standard** control sets difficulty. Both choices remain visible, highlight the active option, remember the preference, and support keyboard arrows. Pawns move one horizontal or vertical connection into an empty spot. Corner pawns must go along an edge before reaching the central junction; centre pawns cannot deliver diagonally. Dragging, tapping and keyboard controls work as before.
 
 Crossroads rematches retain the map and alternate the starting player. Changing Home's selector does not mutate an unfinished match. Opening a puzzle uses Classic; returning Home restores the previous regular match with its own map. Classic saves and puzzle proofs remain compatible.
 

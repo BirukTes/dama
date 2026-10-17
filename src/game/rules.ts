@@ -16,14 +16,21 @@ export interface State {
 }
 export const other = (side: Side): Side => (side === 'blue' ? 'coral' : 'blue');
 export const goals: Record<Side, number[]> = { blue: [0, 3, 6], coral: [2, 5, 8] };
+export const goalsFor = (s: State) => mapFor(s.map).goals;
 // Classic exports remain available for the original analysis and puzzle fixtures.
 export const { edges, neighbours } = mapFor('classic');
 export const key = (s: State): string =>
-  `${s.map === 'crossroads' ? 'crossroads|' : ''}${s.board.map((p) => (p === 'blue' ? 'b' : p === 'coral' ? 'c' : '.')).join('')}:${s.delivered.blue}:${s.delivered.coral}:${s.turn}`;
+  `${s.map && s.map !== 'classic' ? `${s.map}|` : ''}${s.board.map((p) => (p === 'blue' ? 'b' : p === 'coral' ? 'c' : '.')).join('')}:${s.delivered.blue}:${s.delivered.coral}:${s.turn}`;
 export function initialState(turn: Side = 'blue', map: MapId = 'classic'): State {
   const s: State = {
     ...(map === 'classic' ? {} : { map }),
-    board: ['coral', null, 'blue', 'coral', null, 'blue', 'coral', null, 'blue'],
+    board: mapFor(map).points.map((_, n) =>
+      mapFor(map).starts.blue.includes(n)
+        ? 'blue'
+        : mapFor(map).starts.coral.includes(n)
+          ? 'coral'
+          : null,
+    ),
     delivered: { blue: 0, coral: 0 },
     turn,
     turns: 0,
@@ -61,7 +68,7 @@ export function applyMove(s: State, move: Move): State {
   const board = [...s.board];
   const delivered = { ...s.delivered };
   board[move.from] = null;
-  if (goals[s.turn].includes(move.to)) delivered[s.turn]++;
+  if (goalsFor(s)[s.turn].includes(move.to)) delivered[s.turn]++;
   else board[move.to] = s.turn;
   let next: State = {
     ...(s.map ? { map: s.map } : {}),

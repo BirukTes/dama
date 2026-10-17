@@ -24,6 +24,7 @@ npm.cmd run build
 npm.cmd run analyze
 npm.cmd run analyze:rivals
 npm.cmd run analyze -- crossroads
+npm.cmd run analyze -- long-crossing
 ```
 
 With the development server running:
@@ -43,7 +44,7 @@ Run `npm.cmd run format` after editing. Prettier and EditorConfig keep formattin
 
 ## Gameplay
 
-Each side starts with three pawns on one edge of a nine-node board. Move one pawn along one connection into an empty spot. Moving backwards is allowed; jumping and capturing are not. A pawn reaching the opposing edge leaves the board and scores one delivery. First to deliver three wins.
+Each side starts with three pawns on one edge of the selected board. Move one pawn along one connection into an empty spot. Moving backwards is allowed; jumping and capturing are not. A pawn reaching the opposing edge leaves the board and scores one delivery. First to deliver three wins.
 
 Provisional rules pass a blocked player and draw on mutual blocking, threefold repetition, or 100 individual turns including passes. A fresh match starts with Blue; rematches alternate the starting side.
 
@@ -55,9 +56,9 @@ All rivals now take immediate wins and avoid an immediate losing reply when poss
 
 ## Board maps
 
-Home's board selector offers **Classic** and **Crossroads**. Classic retains all 16 original connections. Crossroads uses 12 horizontal/vertical connections and removes the four centre-to-corner diagonals. Starting pawns, goals, turn rules, delivery and draw rules stay the same. Both computer and local play support Crossroads; the selected map stays with the match through undo, rematch and reload. Older saves load as Classic.
+Home's board selector offers six maps: **Classic** (9 spots), **Crossroads** (9), **Ring Road** (9), **Twin Bridges** (12), **Long Crossing** (15), and **Islands** (9, including a passing bay). All use three pawns per side, opposite-edge delivery, and the same move/pass/draw rules. Larger maps use a wider layout. Both computer and local play support every map; undo, rematches, keyboard navigation and saves retain the correct graph. Older saves load as Classic.
 
-Crossroads is a practice board with all three rivals available. It does not change Classic rival statistics or unlocks. The six authored puzzles remain on Classic and still save separately. See [the Crossroads delivery plan and analysis](docs/CROSSROADS.md) for scope and playtesting limits.
+All five alternative maps are practice boards with every rival available. They do not change Classic statistics or unlocks. The six authored puzzles remain on Classic and save separately. See [the board catalogue and validation](docs/BOARD-MAPS.md) for shapes, analysis and playtesting limits, and [the original Crossroads delivery notes](docs/CROSSROADS.md).
 
 ## Puzzles
 

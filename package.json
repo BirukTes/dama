@@ -19,7 +19,7 @@
     "test:journey": "node tests/journey-browser.mjs",
     "test:sound": "node tests/sound-browser.mjs",
     "test:puzzles": "node tests/puzzles-browser.mjs",
-    "test:maps": "node tests/maps-browser.mjs",
+    "test:maps": "node tests/maps-browser.mjs && node tests/all-maps-browser.mjs",
     "test:production": "node tests/production-browser.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

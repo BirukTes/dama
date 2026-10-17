@@ -5,8 +5,8 @@ import '@fontsource/dm-sans/latin-700.css';
 import './style.css';
 import { initialState, legalMoves, applyMove, other, type Move, type Side } from './game/rules';
 import { loadSession, saveSession, type Session } from './persistence/save';
-import { template, points, boardLines } from './ui/template';
-import { mapFor, isMapId, type MapId } from './game/maps';
+import { template, boardNodes, boardLines } from './ui/template';
+import { mapFor, nextSpot, isMapId, type MapId } from './game/maps';
 import { opponents, opponentFor, isOpponent, type OpponentId } from './game/opponents';
 import { loadProgress, saveProgress, recordResult, unlocked } from './persistence/progress';
 import { enableDragging } from './ui/drag';
@@ -21,17 +21,6 @@ const selectedMap = () => $<HTMLInputElement>('input[name="board-map"]:checked')
 const selectedDifficulty = () =>
   $<HTMLInputElement>('input[name="challenge"]:checked').value as Session['difficulty'];
 const names: Record<Side, string> = { blue: 'Blue', coral: 'Coral' };
-const nodeNames = [
-  'top left',
-  'top middle',
-  'top right',
-  'middle left',
-  'centre',
-  'middle right',
-  'bottom left',
-  'bottom middle',
-  'bottom right',
-];
 let mainSession = loadSession();
 let savedPuzzle = loadSession('dama-puzzle-session-v1');
 const restored = (() => {
@@ -264,9 +253,12 @@ function restorePassNotice() {
 function render() {
   const s = session.state;
   const map = mapFor(s.map);
-  const practice = map.id === 'crossroads';
+  const practice = map.id !== 'classic';
+  document.body.classList.toggle('wide-map', map.wide);
   if (renderedMap !== map.id) {
     $('#board svg').innerHTML = boardLines(map.id);
+    document.querySelectorAll('#board [data-node]').forEach((node) => node.remove());
+    $('#board').insertAdjacentHTML('beforeend', boardNodes(map.id));
     renderedMap = map.id;
   }
   $('#board-map-label').textContent = `${map.name}${practice ? ' · Practice' : ''}`;
@@ -311,11 +303,7 @@ function render() {
   document.body.classList.toggle('playing', screen === 'play');
   document.body.classList.toggle('puzzling', screen === 'play' && !!puzzle);
   $('#continue-button').hidden = !hasGame;
-  $('#continue-label').textContent = ended
-    ? 'Review last match'
-    : practice
-      ? 'Continue Crossroads'
-      : 'Continue match';
+  $('#continue-label').textContent = ended ? 'Review last match' : 'Continue match';
   if (screen === 'home') renderOpponents();
   $('#home-button').setAttribute(
     'aria-label',
@@ -349,7 +337,7 @@ function render() {
     button.className = `node ${owner ?? 'empty'} ${selected === n ? 'selected' : ''} ${moves.some((m) => m.to === n) ? 'legal' : ''} ${lastMove?.to === n ? 'last' : ''} ${gestureClasses}`;
     button.setAttribute(
       'aria-label',
-      `${nodeNames[n]}: ${owner ? names[owner] + ' pawn' : 'empty'}${moves.some((m) => m.to === n) ? ', legal destination' : ''}`,
+      `${mapFor(session.state.map).names[n]}: ${owner ? names[owner] + ' pawn' : 'empty'}${moves.some((m) => m.to === n) ? ', legal destination' : ''}`,
     );
     button.setAttribute('aria-pressed', String(selected === n));
     button.setAttribute('aria-disabled', String(ended || !humanTurn || thinking || animating));
@@ -420,7 +408,7 @@ function render() {
         : `Try a different route next time. ${opponent.tip}`;
     if (practice)
       $('#journey-result').textContent =
-        'Crossroads practice. Your Classic rival records and unlocks are unchanged. Try a different route or rematch.';
+        `${map.name} practice. Your Classic rival records and unlocks are unchanged. Try a different route or rematch.`;
   }
   $('#next-puzzle').hidden =
     !puzzle || outcome !== 'solved' || puzzles.indexOf(puzzle) === puzzles.length - 1;
@@ -594,6 +582,7 @@ async function commit(move: Move, human: boolean, origin?: { x: number; y: numbe
   if (!reduced) {
     const dot = document.createElement('span');
     dot.className = `traveller ${side}`;
+    const points = mapFor(session.state.map).points;
     const [x, y] = points[move.from],
       [tx, ty] = points[move.to];
     dot.style.left = `${x / 5}%`;
@@ -654,7 +643,7 @@ async function commit(move: Move, human: boolean, origin?: { x: number; y: numbe
   render();
   const ended = finished();
   announce(
-    `${names[side]} ${delivered ? 'delivered a pawn' : `moved from ${nodeNames[move.from]} to ${nodeNames[move.to]}`}. ${ended ? $('#status').textContent : `${names[session.state.turn]} to move.${session.state.turn === side ? ' The other player had no legal move and passed.' : ''}`}`,
+    `${names[side]} ${delivered ? 'delivered a pawn' : `moved from ${mapFor(session.state.map).names[move.from]} to ${mapFor(session.state.map).names[move.to]}`}. ${ended ? $('#status').textContent : `${names[session.state.turn]} to move.${session.state.turn === side ? ' The other player had no legal move and passed.' : ''}`}`,
   );
   scheduleComputer();
 }
@@ -703,15 +692,14 @@ $('#board').addEventListener('keydown', (event) => {
   const e = event as KeyboardEvent,
     button = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-node]');
   if (!button) return;
-  const n = Number(button.dataset.node),
-    delta: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 3, ArrowUp: -3 };
+  const n = Number(button.dataset.node);
   if (e.key === 'Escape') {
     selected = null;
     render();
   }
-  if (e.key in delta) {
+  if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
     e.preventDefault();
-    $<HTMLButtonElement>(`[data-node="${(n + delta[e.key] + 9) % 9}"]`).focus();
+    $<HTMLButtonElement>(`[data-node="${nextSpot(session.state.map, n, e.key)}"]`).focus();
   }
 });
 $('#undo-button').addEventListener('click', () => {
@@ -801,12 +789,12 @@ function requestHomeMatch(mode: Session['mode']) {
 }
 function renderOpponents() {
   const map = mapFor(selectedMap());
-  const practice = map.id === 'crossroads';
+  const practice = map.id !== 'classic';
   $('#map-select').title = map.description;
   if (!practice && !unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
   $('#journey-progress').textContent = practice
-    ? 'Crossroads · Practice board · All rivals available. Classic progress is kept.'
+    ? `${map.name} · Practice board · All rivals available. Classic progress is kept.`
     : `${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
   $('#opponent-cards').innerHTML = opponents
     .map((o, index) => {
@@ -988,7 +976,7 @@ $('#puzzle-hint').addEventListener('click', () => {
   session.puzzleHinted = true;
   const move = puzzleSolver().winningMoves(session.state, p.moves - session.undo.length)[0];
   const puzzleMessage = move
-    ? `${p.hint} Try ${nodeNames[move.from]} → ${nodeNames[move.to]}.`
+    ? `${p.hint} Try ${mapFor(session.state.map).names[move.from]} → ${mapFor(session.state.map).names[move.to]}.`
     : 'This route no longer guarantees the goal. Undo or retry to find another way.';
   $('#puzzle-hint-text').textContent = puzzleMessage;
   persist();

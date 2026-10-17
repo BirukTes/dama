@@ -1,14 +1,19 @@
-import { mapFor, type MapId } from '../game/maps';
+import { mapFor, maps, type MapId } from '../game/maps';
 import { helpMarkup } from './help';
-export const points = Array.from({ length: 9 }, (_, n) => [
-  80 + (n % 3) * 170,
-  80 + Math.floor(n / 3) * 170,
-]);
-export const boardLines = (map: MapId = 'classic') =>
-  mapFor(map)
-    .edges.map(
+export const boardLines = (id: MapId = 'classic') => {
+  const { points, edges } = mapFor(id);
+  return edges
+    .map(
       ([a, b]) =>
         `<line x1="${points[a][0]}" y1="${points[a][1]}" x2="${points[b][0]}" y2="${points[b][1]}"/>`,
+    )
+    .join('');
+};
+export const boardNodes = (id: MapId = 'classic') =>
+  mapFor(id)
+    .points.map(
+      ([x, y], n) =>
+        `<button class="node" data-node="${n}" style="left:${x / 5}%;top:${y / 5}%"><span class="piece" aria-hidden="true"></span></button>`,
     )
     .join('');
 
@@ -51,27 +56,12 @@ export const template = /* HTML */ `
         <div class="lobby-controls">
           <div class="field" id="map-field">
             <div class="view-switch" id="map-select" role="radiogroup" aria-label="Board map">
-              <label>
-                <input
-                  class="sr-only"
-                  type="radio"
-                  name="board-map"
-                  id="map-classic"
-                  value="classic"
-                  checked
-                />
-                <span>Classic</span>
-              </label>
-              <label>
-                <input
-                  class="sr-only"
-                  type="radio"
-                  name="board-map"
-                  id="map-crossroads"
-                  value="crossroads"
-                />
-                <span>Crossroads</span>
-              </label>
+              ${Object.values(maps)
+                .map(
+                  (m) =>
+                    `<label><input class="sr-only" type="radio" name="board-map" id="map-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span>${m.name}</span></label>`,
+                )
+                .join('')}
             </div>
           </div>
           <div class="field" id="difficulty-field">
@@ -179,7 +169,7 @@ export const template = /* HTML */ `
           <svg viewBox="0 0 500 500" preserveAspectRatio="none" aria-hidden="true">
             ${boardLines()}
           </svg>
-          ${points.map(([x, y], n) => `<button class="node" data-node="${n}" style="left:${x / 5}%;top:${y / 5}%"><span class="piece" aria-hidden="true"></span></button>`).join('')}
+          ${boardNodes()}
         </div>
       </div>
       <div class="rotation-hint" id="rotation-hint" hidden>

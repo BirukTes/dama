@@ -33,6 +33,34 @@ try {
     before,
   );
   await page.locator('#home-button').click();
+  for (const [id, nodes, lines, from, to] of [
+    ['ring-road', 9, 10, 2, 1],
+    ['twin-bridges', 12, 16, 3, 2],
+    ['long-crossing', 15, 22, 4, 3],
+    ['islands', 9, 11, 5, 4],
+  ]) {
+    await page.locator(`label:has(#map-${id})`).click();
+    await page.locator('[data-rival="guardian"]').click();
+    await page.locator('#start-button').click();
+    if (await page.locator('#restart[open]').count()) await page.locator('#confirm-new').click();
+    assert.equal(await page.locator('#board [data-node]').count(), nodes);
+    assert.equal(await page.locator('#board line').count(), lines);
+    await page.locator(`[data-node="${from}"]`).click();
+    await page.locator(`[data-node="${to}"]`).click();
+    await page.waitForFunction(
+      () =>
+        JSON.parse(localStorage.getItem('dama-session-v1')).state.turns >= 2 &&
+        !document.querySelector('.traveller'),
+    );
+    assert.equal(
+      await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state.map),
+      id,
+    );
+    await page.reload();
+    assert.equal(await page.locator('#board [data-node]').count(), nodes);
+    await page.locator('#home-button').click();
+  }
+  await page.locator('#home-button').click();
   await page.locator('label:has(#map-crossroads)').click();
   await page.locator('#start-button').click();
   await page.locator('#confirm-new').click();
@@ -89,6 +117,7 @@ try {
           'source link',
           'built computer worker',
           'Crossroads graph and bundled rival worker',
+          'four additional map graphs, Guardian worker and saved reloads',
           'puzzle completion and bundled defence worker',
           'puzzle play preserves the regular match',
           'saved reload',

@@ -5,16 +5,16 @@ import {
   type Side,
   type State,
   type Move,
-  goals,
+  goalsFor,
 } from '../game/rules';
-import { mapFor, type MapId } from '../game/maps';
+import { maps, mapFor, type MapId } from '../game/maps';
 import type { OpponentId } from '../game/opponents';
 export type Difficulty = 'gentle' | 'standard';
 const distance = (start: number, side: Side, map: MapId): number => {
   let frontier = [start];
   const visited = new Set(frontier);
   for (let d = 0; frontier.length; d++) {
-    if (frontier.some((n) => goals[side].includes(n))) return d;
+    if (frontier.some((n) => mapFor(map).goals[side].includes(n))) return d;
     frontier = frontier
       .flatMap((n) => mapFor(map).neighbours[n])
       .filter((n) => {
@@ -26,10 +26,12 @@ const distance = (start: number, side: Side, map: MapId): number => {
   return 9;
 };
 const distancesFor = (map: MapId) => ({
-  blue: Array.from({ length: 9 }, (_, n) => distance(n, 'blue', map)),
-  coral: Array.from({ length: 9 }, (_, n) => distance(n, 'coral', map)),
+  blue: mapFor(map).points.map((_, n) => distance(n, 'blue', map)),
+  coral: mapFor(map).points.map((_, n) => distance(n, 'coral', map)),
 });
-const distances = { classic: distancesFor('classic'), crossroads: distancesFor('crossroads') };
+const distances = Object.fromEntries(
+  Object.keys(maps).map((id) => [id, distancesFor(id as MapId)]),
+) as Record<MapId, ReturnType<typeof distancesFor>>;
 function evaluate(s: State, side: Side, opponent: OpponentId): number {
   if (s.result)
     return 'winner' in s.result
@@ -39,7 +41,7 @@ function evaluate(s: State, side: Side, opponent: OpponentId): number {
       : 0;
   const score = (who: Side) => {
     const moves = legalMoves(s, who);
-    const threats = moves.filter((m) => goals[who].includes(m.to)).length;
+    const threats = moves.filter((m) => goalsFor(s)[who].includes(m.to)).length;
     const runner = opponent === 'runner';
     return (
       s.delivered[who] * (runner ? 160 : 100) -
@@ -55,7 +57,12 @@ function evaluate(s: State, side: Side, opponent: OpponentId): number {
   // Value deliveries symmetrically: overvaluing the rival's score made Guardian
   // settle for draws too early. Its stronger mobility weight still rewards blocking.
   const centre =
-    opponent === 'guardian' ? (s.board[4] === side ? 6 : s.board[4] === other(side) ? -6 : 0) : 0;
+    opponent === 'guardian'
+      ? mapFor(s.map).junctions.reduce(
+          (sum, n) => sum + (s.board[n] === side ? 6 : s.board[n] === other(side) ? -6 : 0),
+          0,
+        ) / Math.max(1, mapFor(s.map).junctions.length)
+      : 0;
   return score(side) - score(other(side)) + centre;
 }
 export function chooseMove(
@@ -91,7 +98,9 @@ export function chooseMove(
   const exhausted = Symbol('search budget');
   const ordered = (state: State) =>
     legalMoves(state).sort(
-      (a, b) => Number(goals[state.turn].includes(b.to)) - Number(goals[state.turn].includes(a.to)),
+      (a, b) =>
+        Number(goalsFor(state)[state.turn].includes(b.to)) -
+        Number(goalsFor(state)[state.turn].includes(a.to)),
     );
   function search(state: State, depth: number, alpha: number, beta: number): number {
     if (++nodes > 24000) throw exhausted;

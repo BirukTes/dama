@@ -39,7 +39,7 @@ export function unlocked(p: Progress, id: OpponentId): boolean {
 export function recordResult(p: Progress, session: Session): Progress {
   if (
     session.mode !== 'solo' ||
-    session.state.map === 'crossroads' ||
+    (session.state.map ?? 'classic') !== 'classic' ||
     session.puzzleId !== undefined ||
     !session.state.result ||
     !session.matchId ||

@@ -2,7 +2,7 @@ import { initialState, key, legalMoves, applyMove, type State } from '../game/ru
 import { isMapId } from '../game/maps';
 declare const process: { argv: string[] };
 const map = process.argv[2] ?? 'classic';
-if (!isMapId(map)) throw new Error('Choose classic or crossroads.');
+if (!isMapId(map)) throw new Error('Choose a known board map.');
 // Enumerate baseline position transitions; discard repetition and turn-limit history.
 // Retrograde results below apply to the baseline with cycles treated as draws.
 const queue: State[] = [initialState('blue', map), initialState('coral', map)];
