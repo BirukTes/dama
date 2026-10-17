@@ -1,11 +1,14 @@
 import { goals, key, type State } from '../game/rules';
 import type { Difficulty } from '../ai/search';
+import { isOpponent, type OpponentId } from '../game/opponents';
 export interface Session {
   state: State;
   mode: 'solo' | 'local';
   difficulty: Difficulty;
   undo: State[];
   starter: 'blue' | 'coral';
+  opponent?: OpponentId;
+  matchId?: string;
 }
 const storageKey = 'dama-session-v1';
 export function validState(value: unknown): value is State {
@@ -63,6 +66,8 @@ export function loadSession(): Session | null {
       !['solo', 'local'].includes(data.mode) ||
       !['gentle', 'standard'].includes(data.difficulty) ||
       !['blue', 'coral'].includes(data.starter) ||
+      (data.opponent !== undefined && !isOpponent(data.opponent)) ||
+      (data.matchId !== undefined && typeof data.matchId !== 'string') ||
       !Array.isArray(data.undo) ||
       data.undo.length > 100 ||
       !data.undo.every(validState)
