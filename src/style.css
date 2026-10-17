@@ -2365,3 +2365,91 @@ body.wide-map .board {
     line-height: 1.1;
   }
 }
+#icon-settings {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  margin: 12px 0;
+}
+#icon-settings summary {
+  cursor: pointer;
+  min-height: 36px;
+}
+#icon-settings summary img {
+  vertical-align: middle;
+  border-radius: 7px;
+  margin: 0 8px 0 2px;
+}
+#icon-current-label {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-left: 8px;
+}
+#icon-options {
+  border: 0;
+  padding: 0;
+  margin: 16px 0 8px;
+}
+#icon-options legend {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.icon-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.icon-option {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  min-width: 0;
+}
+.icon-option:has(input:checked) {
+  background: var(--accent);
+  border-color: var(--highlight);
+}
+.icon-option:focus-within {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.icon-option input {
+  margin: 4px 0;
+  accent-color: var(--highlight);
+}
+.icon-option img {
+  border-radius: 20%;
+  justify-self: center;
+  max-width: 100%;
+  height: auto;
+}
+.icon-option span,
+.icon-option small {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  text-align: center;
+}
+.icon-option small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.icon-preview-link {
+  display: inline-flex;
+  min-height: 44px;
+  padding: 10px 14px;
+  align-items: center;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  text-decoration: none;
+  background: var(--paper);
+}
+.icon-preview-link:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}

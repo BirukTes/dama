@@ -35,6 +35,7 @@ npm.cmd run test:appearance
 npm.cmd run test:journey
 npm.cmd run test:progression
 npm.cmd run test:modes
+npm.cmd run test:icons
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
@@ -96,6 +97,14 @@ The original font copyright and licence are included in `public/licenses/dm-sans
 The baseline analysis enumerates 2,044 reachable positions, including 10 automatic-pass transitions and no mutual-blocking terminal positions. Retrograde classification treats indefinite cycles as draws and finds both initial positions drawn under perfect play. This excludes threefold-repetition history and the 100-turn cap, and does not establish human match quality or final-ruleset balance.
 
 Offline installation, safe updates, save export/import, and physical-phone validation remain upcoming. The current build is not an installable/offline PWA. The interactive tutorial is now available. Offline installation and safe update handling are next. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
+
+## App icons and installation testing
+
+Settings → **App icon** offers Monogram Dark (default), Monogram Light, Board Light and Board Dark. Icon choice is independent of the game theme and persists on this browser. Choose one and open its installation preview; that page declares the matching manifest and Apple touch icon before loading any JavaScript. All variants identify the same DA’MA app.
+
+Each set includes 32px favicon, 180px Apple touch icon, 192/512px app icons and a separate 512px maskable export. Generated masters and prompt briefs are in [design/app-icons](design/app-icons/README.md). The normal build uses committed exports, without an image-generation dependency.
+
+This enables icon/installation testing, not offline caching. Native installation and existing-icon updates are browser-controlled. Use the HTTPS deployment for phone installation testing; test the chosen result on a physical device. See [icon and installation notes](docs/APP-ICONS.md).
 
 ## Hosting
 

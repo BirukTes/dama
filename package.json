@@ -25,7 +25,8 @@
     "format:check": "prettier --check .",
     "test:progression": "node tests/progression-browser.mjs",
     "test:tutorial": "node tests/tutorial-browser.mjs",
-    "test:modes": "node tests/modes-browser.mjs"
+    "test:modes": "node tests/modes-browser.mjs",
+    "test:icons": "node tests/icons-browser.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

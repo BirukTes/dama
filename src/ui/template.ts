@@ -1,6 +1,7 @@
 import { mapFor, maps, type MapId } from '../game/maps';
 import { helpMarkup } from './help';
 import { tutorialMarkup } from './tutorial';
+import { appIconMarkup } from './app-icons';
 export const boardLines = (id: MapId = 'classic') => {
   const { points, edges } = mapFor(id);
   return edges
@@ -317,6 +318,7 @@ export const template = /* HTML */ `
         <option value="dark">Dark</option>
       </select>
     </label>
+    ${appIconMarkup}
     <label class="check">
       <input type="checkbox" id="immersive" />
       Focus view · more board, fewer tips

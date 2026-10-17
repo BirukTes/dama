@@ -17,6 +17,7 @@ import {
 } from './persistence/progress';
 import { enableDragging } from './ui/drag';
 import { initTutorial } from './ui/tutorial';
+import { initAppIcons } from './ui/app-icons';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
@@ -91,6 +92,7 @@ try {
   /* Navigation can remain in memory. */
 }
 $('#app').innerHTML = template;
+initAppIcons();
 
 $<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
 $<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;

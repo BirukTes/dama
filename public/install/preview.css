@@ -1,0 +1,58 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #283e39;
+  background: #f4f1e9;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: max(24px, env(safe-area-inset-top)) 20px 24px;
+}
+main {
+  max-width: 490px;
+  margin: auto;
+  padding: 28px;
+  background: #faf8f2;
+  border: 1px solid #c4cbbb;
+  border-radius: 16px;
+  text-align: center;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+.preview {
+  border-radius: 24%;
+  display: block;
+  margin: 24px auto;
+}
+h1 {
+  font:
+    400 30px Georgia,
+    serif;
+}
+p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.note {
+  color: #626f68;
+  font-size: 12px;
+}
+button,
+.back {
+  display: inline-block;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: 9px;
+  background: #283e39;
+  color: #faf8f2;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+[hidden] {
+  display: none !important;
+}

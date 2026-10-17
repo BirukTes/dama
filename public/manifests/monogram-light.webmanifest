@@ -1,0 +1,31 @@
+{
+  "id": "/",
+  "name": "DA’MA",
+  "short_name": "DA’MA",
+  "description": "Three pawns. Find your way across. A free strategy game.",
+  "start_url": "/?app-icon=monogram-light",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#faf8f2",
+  "background_color": "#faf8f2",
+  "icons": [
+    {
+      "src": "/icons/monogram-light/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/monogram-light/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/monogram-light/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

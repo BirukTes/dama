@@ -7,3 +7,12 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+/icon-bootstrap.js
+  Cache-Control: no-cache
+
+/manifests/*
+  Cache-Control: no-cache
+
+/install/*
+  Cache-Control: no-cache
