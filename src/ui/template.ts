@@ -12,66 +12,50 @@ export const template = /* HTML */ `
       <span class="wordmark-dot">.</span>
     </button>
     <span class="edition">THE ORIGINAL BOARD GAME</span>
-    <button class="quiet" id="settings-button">
-      Settings
-      <span aria-hidden="true">⚙</span>
-    </button>
+    <nav class="header-actions" aria-label="Game help and settings">
+      <button class="quiet" id="help-button">How to play</button>
+      <button class="quiet" id="settings-button">
+        Settings
+        <span aria-hidden="true">⚙</span>
+      </button>
+    </nav>
   </header>
-  <main id="home-screen" aria-label="Home">
-    <section class="intro">
-      <p class="eyebrow">A LITTLE BOARD. A LITTLE STRATEGY.</p>
-      <h1>
-        Find your way
-        <br />
-        <em>across.</em>
-      </h1>
-      <p class="lede">
-        Three pawns each. Nine places to move.
-        <br />
-        Bring yours to the other side first.
-      </p>
-      <button class="text-link" id="help-button">
-        How to play
-        <span aria-hidden="true">↗</span>
-      </button>
-      <div class="intro-note">
-        <span class="small-mark" aria-hidden="true">✳</span>
-        <p>
-          A college idea from 2015,
-          <br />
-          finding a new way to play.
-        </p>
+  <main id="home-screen" aria-label="Choose a match">
+    <section class="play-lobby" aria-labelledby="lobby-title">
+      <div class="lobby-heading">
+        <div>
+          <p class="eyebrow">THREE PAWNS. FIND YOUR WAY ACROSS.</p>
+          <h1 id="lobby-title">Who’s next?</h1>
+        </div>
+        <button class="primary" id="continue-button" hidden>
+          <span id="continue-label">Continue match</span>
+          →
+        </button>
       </div>
-    </section>
-    <section class="home-actions" aria-label="Choose how to play">
-      <p class="eyebrow">TAKE A SEAT</p>
-      <h2>
-        A way across
-        <br />
-        for everyone.
-      </h2>
-      <button class="primary home-choice" id="continue-button" hidden>
-        <span id="continue-label">Continue match</span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button class="home-choice" id="solo-button">
-        <span>
-          Play the computer
-          <small>A quiet challenge, at your pace.</small>
-        </span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button class="home-choice" id="local-button">
-        <span>
-          Two players
-          <small>One board. Share this device.</small>
-        </span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button class="quiet" id="learn-button">
-        Learn the rules
-        <span aria-hidden="true">↗</span>
-      </button>
+      <p class="journey-summary" id="journey-progress"></p>
+      <div class="opponent-cards" id="opponent-cards" aria-label="Choose an opponent"></div>
+      <div class="lobby-bottom">
+        <section
+          class="opponent-profile"
+          id="opponent-profile"
+          aria-live="polite"
+          aria-atomic="true"
+        ></section>
+        <div class="lobby-controls">
+          <label class="field" id="difficulty-field">
+            Challenge
+            <select id="difficulty-select">
+              <option value="gentle">Gentle</option>
+              <option value="standard">Standard</option>
+            </select>
+          </label>
+          <button class="primary" id="start-button">Play Coral →</button>
+          <button class="quiet" id="local-button">
+            Play with a friend
+            <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </div>
     </section>
   </main>
   <main id="play-screen" aria-label="Play" hidden>
@@ -83,7 +67,23 @@ export const template = /* HTML */ `
             New match
             <span aria-hidden="true">↻</span>
           </button>
-          <button class="quiet" id="view-button" aria-pressed="false">Focus view</button>
+          <div class="view-switch" id="view-control" role="radiogroup" aria-label="Board view">
+            <label>
+              <input
+                class="sr-only"
+                type="radio"
+                name="board-view"
+                id="view-standard"
+                value="standard"
+                checked
+              />
+              <span>Standard</span>
+            </label>
+            <label>
+              <input class="sr-only" type="radio" name="board-view" id="view-focus" value="focus" />
+              <span>Focus</span>
+            </label>
+          </div>
           <button class="quiet" id="pause-button">
             Pause
             <span aria-hidden="true">Ⅱ</span>
@@ -117,13 +117,17 @@ export const template = /* HTML */ `
           class="board"
           id="board"
           role="group"
-          aria-label="Board. Select your pawn, then an empty connected destination."
+          aria-label="Board. Drag your pawn to a connected empty spot, or tap a pawn then its destination."
         >
-          <svg viewBox="0 0 500 500" aria-hidden="true">
+          <svg viewBox="0 0 500 500" preserveAspectRatio="none" aria-hidden="true">
             ${edges.map(([a, b]) => `<line x1="${points[a][0]}" y1="${points[a][1]}" x2="${points[b][0]}" y2="${points[b][1]}"/>`).join('')}
           </svg>
           ${points.map(([x, y], n) => `<button class="node" data-node="${n}" style="left:${x / 5}%;top:${y / 5}%"><span class="piece" aria-hidden="true"></span></button>`).join('')}
         </div>
+      </div>
+      <div class="rotation-hint" id="rotation-hint" hidden>
+        Rotate your phone for a wider board.
+        <button class="quiet" id="dismiss-rotation" aria-label="Dismiss rotation hint">×</button>
       </div>
       <div class="turn-panel">
         <span class="turn-dot" id="turn-dot" aria-hidden="true"></span>
@@ -171,7 +175,9 @@ export const template = /* HTML */ `
     <h2 id="result-title"></h2>
     <p id="result-detail"></p>
     <p class="final-score" id="final-score"></p>
+    <p class="dialog-note" id="journey-result" hidden></p>
     <div class="dialog-actions">
+      <button class="primary" id="next-opponent" hidden>Next challenge →</button>
       <button class="primary" id="play-again" autofocus>Play again ↻</button>
       <button class="quiet go-home">Home</button>
     </div>
@@ -190,29 +196,6 @@ export const template = /* HTML */ `
       <button class="quiet" id="pause-new">New match ↻</button>
       <button class="quiet go-home">Save & return home</button>
     </div>
-  </dialog>
-  <dialog id="setup" aria-labelledby="setup-title">
-    <div class="dialog-top">
-      <p class="eyebrow">YOUR NEXT MATCH</p>
-      <button class="quiet close" aria-label="Cancel match setup">Close ×</button>
-    </div>
-    <h2 id="setup-title">Choose your seat.</h2>
-    <label class="field">
-      Players
-      <select id="mode-select">
-        <option value="solo">You + computer</option>
-        <option value="local">Two players</option>
-      </select>
-    </label>
-    <label class="field" id="difficulty-field">
-      Computer
-      <select id="difficulty-select">
-        <option value="gentle">Gentle</option>
-        <option value="standard">Standard</option>
-      </select>
-    </label>
-    <p class="dialog-note" id="setup-note"></p>
-    <button class="primary" id="start-button">Start match →</button>
   </dialog>
   ${helpMarkup}
   <dialog id="settings">
@@ -242,7 +225,7 @@ export const template = /* HTML */ `
       Reduce motion
     </label>
     <label class="check">
-      <input type="checkbox" id="sound" />
+      <input type="checkbox" id="sound" checked />
       Move sounds
     </label>
     <p class="dialog-note">
@@ -250,6 +233,10 @@ export const template = /* HTML */ `
       browser data removes it. Offline installation comes in a later milestone.
     </p>
     <button class="primary close">Done</button>
+    <p class="dialog-note">
+      DA’MA began as a college game idea in 2015. Three pawns, nine places, and a way across for
+      everyone.
+    </p>
     <div class="about-links" aria-label="About DA’MA">
       <a href="https://github.com/BirukTes/dama" target="_blank" rel="noopener noreferrer">
         Source &amp; issues on GitHub ↗
@@ -269,9 +256,7 @@ export const template = /* HTML */ `
       <button class="quiet close" aria-label="Cancel new match">Close ×</button>
     </div>
     <h2>Another way across?</h2>
-    <p class="dialog-note">
-      Start a new match with the same players and difficulty. This replaces the current match.
-    </p>
+    <p class="dialog-note" id="restart-detail">This replaces your unfinished match.</p>
     <button class="primary" id="confirm-new">Start new match</button>
     <button class="quiet close">Keep playing</button>
   </dialog>

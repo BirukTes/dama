@@ -1,0 +1,179 @@
+import type { Move, Side } from '../game/rules';
+
+export function enableDragging(
+  board: HTMLElement,
+  controls: {
+    canStart: (node: number) => boolean;
+    moves: (node: number) => Move[];
+    side: () => Side;
+    select: (node: number | null) => void;
+    commit: (move: Move, origin: { x: number; y: number }) => void;
+    announce: (text: string) => void;
+  },
+) {
+  let gesture: {
+    pointer: number;
+    from: number;
+    x: number;
+    y: number;
+    active: boolean;
+    source: HTMLElement;
+    ghost: HTMLElement | null;
+    originX: number;
+    originY: number;
+    target: number | null;
+  } | null = null;
+  let suppressUntil = 0;
+  let returning = false;
+  let returnCleanup: (() => void) | null = null;
+  const reduced = () =>
+    document.body.classList.contains('reduce-motion') ||
+    matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function clean() {
+    if (!gesture) return;
+    const g = gesture;
+    gesture = null;
+    g.ghost?.remove();
+    g.source.classList.remove('drag-source');
+    board.querySelectorAll('.drop-target').forEach((n) => n.classList.remove('drop-target'));
+    if (board.hasPointerCapture(g.pointer)) board.releasePointerCapture(g.pointer);
+  }
+  function cancel() {
+    const wasReturning = returning;
+    returnCleanup?.();
+    if (!gesture) {
+      if (wasReturning) controls.select(null);
+      return;
+    }
+    const active = gesture.active;
+    if (active) suppressUntil = performance.now() + 500;
+    clean();
+    if (active) controls.select(null);
+  }
+  board.addEventListener(
+    'click',
+    (event) => {
+      if (performance.now() < suppressUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    true,
+  );
+  board.addEventListener('pointerdown', (event) => {
+    if (!event.isPrimary || event.button !== 0 || gesture || returning) return;
+    const source = (event.target as HTMLElement).closest<HTMLElement>('[data-node]');
+    const from = Number(source?.dataset.node);
+    if (!source || !controls.canStart(from)) return;
+    const piece = source.querySelector('.piece')!.getBoundingClientRect();
+    gesture = {
+      pointer: event.pointerId,
+      from,
+      x: event.clientX,
+      y: event.clientY,
+      active: false,
+      source,
+      ghost: null,
+      originX: piece.left + piece.width / 2,
+      originY: piece.top + piece.height / 2,
+      target: null,
+    };
+  });
+  function move(event: PointerEvent) {
+    const g = gesture;
+    if (!g || g.pointer !== event.pointerId) return;
+    if (!g.active && Math.hypot(event.clientX - g.x, event.clientY - g.y) < 6) return;
+    if (!g.active) {
+      g.active = true;
+      controls.select(g.from);
+      board.setPointerCapture(g.pointer);
+      const piece = g.source.querySelector('.piece')!.getBoundingClientRect();
+      g.ghost = document.createElement('span');
+      g.ghost.className = `traveller drag-ghost ${controls.side()}`;
+      g.ghost.style.width = `${piece.width}px`;
+      g.ghost.style.height = `${piece.height}px`;
+      g.source.classList.add('drag-source');
+      document.body.append(g.ghost);
+    }
+    event.preventDefault();
+    const x = g.originX + event.clientX - g.x,
+      y = g.originY + event.clientY - g.y;
+    g.ghost!.style.left = `${x}px`;
+    g.ghost!.style.top = `${y}px`;
+    let nearest: number | null = null,
+      best = Infinity;
+    for (const m of controls.moves(g.from)) {
+      const rect = board
+        .querySelector<HTMLElement>(`[data-node="${m.to}"]`)!
+        .getBoundingClientRect();
+      const distance = Math.hypot(x - rect.left - rect.width / 2, y - rect.top - rect.height / 2);
+      if (distance <= Math.max(28, rect.width * 0.72) && distance < best) {
+        nearest = m.to;
+        best = distance;
+      }
+    }
+    g.target = nearest;
+    board
+      .querySelectorAll<HTMLElement>('[data-node]')
+      .forEach((n) => n.classList.toggle('drop-target', Number(n.dataset.node) === nearest));
+  }
+  board.addEventListener('pointermove', move);
+  board.addEventListener('pointerup', async (event) => {
+    const g = gesture;
+    if (!g || event.pointerId !== g.pointer) return;
+    if (!g.active) {
+      clean();
+      return;
+    }
+    move(event);
+    suppressUntil = performance.now() + 500;
+    event.preventDefault();
+    if (g.target !== null) {
+      const target = g.target;
+      const origin = { x: parseFloat(g.ghost!.style.left), y: parseFloat(g.ghost!.style.top) };
+      clean();
+      controls.commit({ from: g.from, to: target }, origin);
+      return;
+    }
+    // Detach the gesture before releasing capture; animate the rejected drop home.
+    const ghost = g.ghost!;
+    g.ghost = null;
+    clean();
+    returning = true;
+    g.source.classList.add('drag-source');
+    returnCleanup = () => {
+      ghost.remove();
+      g.source.classList.remove('drag-source');
+      returning = false;
+      returnCleanup = null;
+    };
+    const finishReturn = returnCleanup;
+    if (!reduced())
+      await ghost.animate(
+        [
+          { left: ghost.style.left, top: ghost.style.top },
+          { left: `${g.originX}px`, top: `${g.originY}px` },
+        ],
+        { duration: 190, easing: 'ease-out', fill: 'forwards' },
+      ).finished;
+    // A menu, resize or visibility change may already have cancelled this return.
+    if (returnCleanup !== finishReturn) return;
+    finishReturn();
+    controls.select(null);
+    controls.announce(
+      'That destination is unavailable. Your pawn returned; your turn is unchanged.',
+    );
+  });
+  board.addEventListener('pointercancel', cancel);
+  board.addEventListener('lostpointercapture', (event) => {
+    // Touch starts with implicit capture on the button; transferring it to the board
+    // must not cancel the new drag when the button's loss event bubbles here.
+    if (gesture?.pointer === event.pointerId && !board.hasPointerCapture(event.pointerId)) cancel();
+  });
+  window.addEventListener('resize', cancel);
+  window.addEventListener('blur', cancel);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancel();
+  });
+  return cancel;
+}

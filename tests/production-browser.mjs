@@ -19,7 +19,6 @@ try {
     await page.locator('.source-link').getAttribute('href'),
     'https://github.com/BirukTes/dama',
   );
-  await page.locator('#solo-button').click();
   await page.locator('#start-button').click();
   await page.locator('[data-node="2"]').click();
   await page.locator('[data-node="4"]').click();

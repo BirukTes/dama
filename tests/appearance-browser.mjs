@@ -3,7 +3,11 @@ import { strict as assert } from 'node:assert';
 import { mkdir } from 'node:fs/promises';
 await mkdir('.inspection', { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
-const page = await browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme: 'light' });
+const page = await browser.newPage({
+  viewport: { width: 390, height: 844 },
+  colorScheme: 'light',
+  hasTouch: true,
+});
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 await page.addInitScript(() => {
@@ -22,7 +26,7 @@ await page.locator('#settings .primary').click();
 assert.equal(await page.locator('body').getAttribute('data-theme'), 'dark');
 await page.reload();
 assert.equal(await page.locator('body').getAttribute('data-theme'), 'dark');
-await page.locator('#learn-button').click();
+await page.locator('#help-button').click();
 assert.equal(await page.locator('.rule-demo').count(), 4);
 await page.screenshot({ path: '.inspection/help-dark.png', fullPage: true });
 await page.locator('#help .primary').click();
@@ -34,7 +38,6 @@ await page.waitForFunction(() => document.body.dataset.theme === 'dark');
 await page.emulateMedia({ colorScheme: 'light' });
 await page.waitForFunction(() => document.body.dataset.theme === 'light');
 await page.locator('#local-button').click();
-await page.locator('#start-button').click();
 await page.locator('#home-button').click();
 const layouts = [];
 async function fits(label, selectors) {
@@ -68,35 +71,47 @@ for (const viewport of [
   await page.setViewportSize(viewport);
   await fits(`home ${viewport.width}x${viewport.height}`, [
     '#home-button',
+    '#lobby-title',
+    '#opponent-cards',
+    '#opponent-profile',
     '#settings-button',
     '#continue-button',
-    '#solo-button',
+    '#start-button',
     '#local-button',
-    '#learn-button',
+    '#help-button',
   ]);
   await page.locator('#continue-button').click();
   await fits(`standard ${viewport.width}x${viewport.height}`, [
     '#board',
     '#pause-button',
-    '#view-button',
+    '#view-control',
     '#blue-score',
     '#coral-score',
     '#status',
     '#undo-button',
   ]);
   const standard = await page.locator('#board').boundingBox();
-  await page.locator('#view-button').click();
-  assert.equal(await page.locator('#view-button').getAttribute('aria-pressed'), 'true');
+  await page.locator('label:has(#view-focus)').click();
+  assert.equal(await page.locator('#view-focus').isChecked(), true);
   await fits(`focus ${viewport.width}x${viewport.height}`, [
     '#board',
     '#pause-button',
-    '#view-button',
+    '#view-control',
     '#blue-score',
     '#coral-score',
     '#status',
     '#undo-button',
   ]);
   const focused = await page.locator('#board').boundingBox();
+  if (viewport.width === 390) {
+    await page.locator('#view-focus').focus();
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator('#view-standard').isChecked(), true);
+    assert.equal(await page.locator('#immersive').isChecked(), false);
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator('#view-focus').isChecked(), true);
+    assert.equal(await page.locator('#immersive').isChecked(), true);
+  }
   assert.ok(focused.width >= standard.width, `Focus board is smaller at ${viewport.width}`);
   layouts.push({
     viewport,
@@ -105,7 +120,7 @@ for (const viewport of [
   });
   if (viewport.width === 844)
     await page.screenshot({ path: '.inspection/focus-landscape.png', fullPage: true });
-  await page.locator('#view-button').click();
+  await page.locator('label:has(#view-standard)').click();
   await page.locator('#home-button').click();
 }
 await page.setViewportSize({ width: 390, height: 844 });
@@ -117,6 +132,7 @@ await page.screenshot({ path: '.inspection/home-dark.png', fullPage: true });
 await page.reload();
 assert.equal(await page.locator('#theme').inputValue(), 'dark');
 assert.equal(await page.locator('#immersive').isChecked(), true);
+assert.equal(await page.locator('#view-focus').isChecked(), true);
 await page.locator('#continue-button').click();
 await page.screenshot({ path: '.inspection/focus-dark.png', fullPage: true });
 // Deliver a non-final Blue pawn: verify edge arrival, score flight, and clear feedback.

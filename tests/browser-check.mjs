@@ -50,7 +50,6 @@ assert.equal(await page.locator('#home-screen').isVisible(), true);
 assert.equal(await page.locator('#play-screen').isVisible(), false);
 assert.equal(await page.locator('#continue-button').isVisible(), false);
 await page.screenshot({ path: '.inspection/home-desktop.png', fullPage: true });
-await page.locator('#solo-button').click();
 await page.locator('#start-button').click();
 assert.equal(await page.locator('#home-screen').isVisible(), false);
 await page.screenshot({ path: '.inspection/desktop.png', fullPage: true });
@@ -75,7 +74,6 @@ assert.equal((await saved()).state.turns, 0);
 await page.locator('#home-button').click();
 assert.equal(await page.locator('#continue-button').isVisible(), true);
 await page.locator('#local-button').click();
-await page.locator('#start-button').click();
 assert.equal((await saved()).mode, 'local');
 assert.equal((await saved()).state.turn, 'blue');
 let count = 0;
@@ -172,8 +170,8 @@ await fixture([null, 'blue', null, null, 'coral', null, null, null, null], 'solo
   coral: 2,
 });
 await page.waitForSelector('#result-panel[open]');
-assert.equal(await page.locator('#result-title').textContent(), 'The computer won');
-assert.match(await page.locator('#final-score').textContent(), /Computer 3 \/ 3/);
+assert.equal(await page.locator('#result-title').textContent(), 'Coral won');
+assert.match(await page.locator('#final-score').textContent(), /Coral 3 \/ 3/);
 assert.equal(
   await page.locator('#play-again').evaluate((el) => el === document.activeElement),
   true,

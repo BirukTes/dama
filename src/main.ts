@@ -6,6 +6,10 @@ import './style.css';
 import { initialState, legalMoves, applyMove, other, type Move, type Side } from './game/rules';
 import { loadSession, saveSession, type Session } from './persistence/save';
 import { template, points } from './ui/template';
+import { opponents, opponentFor, isOpponent, type OpponentId } from './game/opponents';
+import { loadProgress, saveProgress, recordResult, unlocked } from './persistence/progress';
+import { enableDragging } from './ui/drag';
+import { createMatchId } from './persistence/match-id';
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string): T =>
   document.querySelector<T>(selector)!;
@@ -29,13 +33,23 @@ let session: Session = restored ?? {
   undo: [],
   starter: 'blue',
 };
+session.opponent ??= 'coral';
+session.matchId ??= createMatchId();
+let progress = loadProgress();
+let chosenOpponent: OpponentId = session.opponent;
+let pendingStart: Session['mode'] | false = false;
+let rotationDismissed = false;
+let ownsFullscreen = false;
+let ownsOrientation = false;
+let focusRequest = 0;
 let selected: number | null = null;
 let worker: Worker | null = null;
 let thinking = false,
   animating = false,
   storageAvailable = true;
 let timer: ReturnType<typeof setTimeout> | null = null;
-let sound = false;
+let sound = true;
+let soundPreferenceSet = false;
 let audio: AudioContext | null = null;
 let lastMove: Move | null = null;
 let passedSide: Side | null = null;
@@ -55,19 +69,30 @@ try {
 }
 $('#app').innerHTML = template;
 
-$('#mode-select').setAttribute('value', session.mode);
-$<HTMLSelectElement>('#mode-select').value = session.mode;
 $<HTMLSelectElement>('#difficulty-select').value = session.difficulty;
 try {
+  const choice = JSON.parse(localStorage.getItem('dama-home-choice-v1') ?? '{}');
+  if (isOpponent(choice.opponent)) chosenOpponent = choice.opponent;
+  if (['gentle', 'standard'].includes(choice.difficulty))
+    $<HTMLSelectElement>('#difficulty-select').value = choice.difficulty;
+} catch {
+  /* Choosing a match does not require storage. */
+}
+try {
   const settings = JSON.parse(localStorage.getItem('dama-settings-v1') ?? '{}');
+  soundPreferenceSet = settings.soundPreferenceSet === true;
   for (const setting of ['contrast', 'motion', 'sound', 'immersive'])
-    $<HTMLInputElement>(`#${setting}`).checked = settings[setting] === true;
+    $<HTMLInputElement>(`#${setting}`).checked =
+      setting === 'sound'
+        ? !soundPreferenceSet || settings.sound !== false
+        : settings[setting] === true;
   if (['light', 'dark', 'system'].includes(settings.theme))
     $<HTMLSelectElement>('#theme').value = settings.theme;
 } catch {
   /* Browser storage is optional. */
 }
 function updateSettings() {
+  cancelDrag?.();
   document.body.classList.toggle('high-contrast', $<HTMLInputElement>('#contrast').checked);
   document.body.classList.toggle('reduce-motion', $<HTMLInputElement>('#motion').checked);
   sound = $<HTMLInputElement>('#sound').checked;
@@ -75,10 +100,10 @@ function updateSettings() {
   document.body.dataset.theme =
     theme === 'system' ? (systemTheme.matches ? 'dark' : 'light') : theme;
   document.body.classList.toggle('immersive', $<HTMLInputElement>('#immersive').checked);
-  $('#view-button').textContent = $<HTMLInputElement>('#immersive').checked
-    ? 'Standard view'
-    : 'Focus view';
-  $('#view-button').setAttribute('aria-pressed', String($<HTMLInputElement>('#immersive').checked));
+  $('#rotation-hint').hidden = !$<HTMLInputElement>('#immersive').checked || rotationDismissed;
+  if (!$<HTMLInputElement>('#immersive').checked) releaseFocus();
+  $<HTMLInputElement>('#view-focus').checked = $<HTMLInputElement>('#immersive').checked;
+  $<HTMLInputElement>('#view-standard').checked = !$<HTMLInputElement>('#immersive').checked;
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', document.body.dataset.theme === 'dark' ? '#101c19' : '#f4f1e9');
@@ -93,26 +118,96 @@ function updateSettings() {
           ]),
         ),
         theme,
+        soundPreferenceSet,
       }),
     );
   } catch {
     /* Play remains available. */
   }
 }
-updateSettings();
-for (const setting of ['contrast', 'motion', 'sound', 'immersive', 'theme'])
+// Initial settings are applied after drag cancellation has been registered below.
+for (const setting of ['contrast', 'motion', 'immersive', 'theme'])
   $(`#${setting}`).addEventListener('change', updateSettings);
-systemTheme.addEventListener('change', updateSettings);
-$('#view-button').addEventListener('click', () => {
-  if (animating) return;
-  const toggle = $<HTMLInputElement>('#immersive');
-  toggle.checked = !toggle.checked;
+$('#sound').addEventListener('change', () => {
+  soundPreferenceSet = true;
   updateSettings();
+  if (sound) primeAudio();
+});
+$('#immersive').addEventListener('change', () => {
+  if ($<HTMLInputElement>('#immersive').checked && screen === 'play') void enterFocus();
+});
+systemTheme.addEventListener('change', updateSettings);
+$('#view-control').addEventListener('change', () => {
+  if (animating) {
+    updateSettings();
+    return;
+  }
+  const toggle = $<HTMLInputElement>('#immersive');
+  toggle.checked = $<HTMLInputElement>('#view-focus').checked;
+  updateSettings();
+  if (toggle.checked) void enterFocus();
   announce(
     toggle.checked
       ? 'Focus view enabled. Scores and turn status remain visible.'
       : 'Standard view enabled.',
   );
+});
+async function enterFocus() {
+  const request = ++focusRequest;
+  if (screen !== 'play' || !$<HTMLInputElement>('#immersive').checked) return;
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+      ownsFullscreen = true;
+    }
+    if (
+      request !== focusRequest ||
+      screen !== 'play' ||
+      !$<HTMLInputElement>('#immersive').checked
+    ) {
+      releaseFocus();
+      return;
+    }
+    const orientation = window.screen.orientation as ScreenOrientation & {
+      lock?: (value: string) => Promise<void>;
+    };
+    if (matchMedia('(pointer: coarse)').matches && orientation.lock) {
+      await orientation.lock('landscape');
+      ownsOrientation = true;
+      if (
+        request !== focusRequest ||
+        screen !== 'play' ||
+        !$<HTMLInputElement>('#immersive').checked
+      )
+        releaseFocus();
+    }
+  } catch {
+    /* The responsive board remains playable when fullscreen or locking is unavailable. */
+  }
+}
+function releaseFocus() {
+  focusRequest++;
+  if (ownsOrientation) {
+    window.screen.orientation?.unlock();
+    ownsOrientation = false;
+  }
+  if (ownsFullscreen) {
+    ownsFullscreen = false;
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+  }
+}
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    ownsFullscreen = false;
+    if (ownsOrientation) {
+      window.screen.orientation?.unlock();
+      ownsOrientation = false;
+    }
+  }
+});
+$('#dismiss-rotation').addEventListener('click', () => {
+  rotationDismissed = true;
+  $('#rotation-hint').hidden = true;
 });
 function announce(text: string) {
   $('#announcement').textContent = text;
@@ -135,12 +230,22 @@ function restorePassNotice() {
 }
 function render() {
   const s = session.state;
+  const opponent = opponentFor(session.opponent);
+  names.coral = session.mode === 'solo' ? opponent.name : 'Coral';
+  document.body.dataset.opponent =
+    session.mode === 'solo' && screen === 'play' ? opponent.id : 'coral';
+  const updated = recordResult(progress, session);
+  if (updated !== progress) {
+    progress = updated;
+    if (!saveProgress(progress)) storageAvailable = false;
+  }
   const humanTurn = session.mode === 'local' || s.turn === 'blue';
   $('#home-screen').hidden = screen !== 'home';
   $('#play-screen').hidden = screen !== 'play';
   document.body.classList.toggle('playing', screen === 'play');
   $('#continue-button').hidden = !hasGame;
   $('#continue-label').textContent = s.result ? 'Review last match' : 'Continue match';
+  if (screen === 'home') renderOpponents();
   $('#home-button').setAttribute(
     'aria-label',
     screen === 'play' ? 'Save match and return home' : 'DA’MA home',
@@ -151,7 +256,8 @@ function render() {
     session.mode === 'solo'
       ? `YOU + COMPUTER · ${session.difficulty.toUpperCase()}`
       : 'TWO PLAYERS · ONE BOARD';
-  $('#coral-label').textContent = session.mode === 'solo' ? 'COMPUTER · CORAL' : 'CORAL';
+  $('#coral-label').textContent =
+    session.mode === 'solo' ? `${opponent.symbol} ${opponent.name.toUpperCase()}` : 'CORAL';
   $('#blue-label').textContent = session.mode === 'solo' ? 'YOU · BLUE' : 'BLUE';
   for (const side of ['blue', 'coral'] as const) {
     const count = s.delivered[side] - Number(pendingDelivery === side);
@@ -165,7 +271,10 @@ function render() {
   document.querySelectorAll<HTMLButtonElement>('[data-node]').forEach((button) => {
     const n = Number(button.dataset.node),
       owner = s.board[n];
-    button.className = `node ${owner ?? 'empty'} ${selected === n ? 'selected' : ''} ${moves.some((m) => m.to === n) ? 'legal' : ''} ${lastMove?.to === n ? 'last' : ''}`;
+    const gestureClasses = ['drag-source', 'drop-target']
+      .filter((name) => button.classList.contains(name))
+      .join(' ');
+    button.className = `node ${owner ?? 'empty'} ${selected === n ? 'selected' : ''} ${moves.some((m) => m.to === n) ? 'legal' : ''} ${lastMove?.to === n ? 'last' : ''} ${gestureClasses}`;
     button.setAttribute(
       'aria-label',
       `${nodeNames[n]}: ${owner ? names[owner] + ' pawn' : 'empty'}${moves.some((m) => m.to === n) ? ', legal destination' : ''}`,
@@ -177,11 +286,11 @@ function render() {
   let status = `${names[s.turn]} to move`;
   let instruction =
     selected === null
-      ? 'Choose a pawn to see its possible moves.'
+      ? 'Drag a pawn, or tap one to see its possible moves.'
       : 'Choose a highlighted spot. Select the pawn again to cancel.';
   if (thinking) {
-    status = 'Coral is thinking';
-    instruction = 'Finding a way across…';
+    status = `${names.coral} is thinking`;
+    instruction = opponent.tip;
   }
   const passNotice = $('#pass-notice');
   passNotice.hidden = screen !== 'play' || passedSide === null || !!s.result;
@@ -206,7 +315,7 @@ function render() {
       ? session.mode === 'solo'
         ? winner === 'blue'
           ? 'You won!'
-          : 'The computer won'
+          : `${opponent.name} won`
         : `${names[winner]} wins!`
       : 'Match drawn';
     instruction =
@@ -219,10 +328,22 @@ function render() {
           }[s.result.draw];
     $('#result-title').textContent = status;
     $('#result-detail').textContent = winner
-      ? `${session.mode === 'solo' ? (winner === 'blue' ? 'You delivered' : 'The computer delivered') : `${names[winner]} delivered`} all three pawns. This match is finished.`
+      ? `${session.mode === 'solo' ? (winner === 'blue' ? 'You delivered' : `${opponent.name} delivered`) : `${names[winner]} delivered`} all three pawns. This match is finished.`
       : `${instruction} This match is finished.`;
     $('#final-score').textContent =
-      `${session.mode === 'solo' ? 'You' : 'Blue'} ${s.delivered.blue} / 3 · ${session.mode === 'solo' ? 'Computer' : 'Coral'} ${s.delivered.coral} / 3`;
+      `${session.mode === 'solo' ? 'You' : 'Blue'} ${s.delivered.blue} / 3 · ${names.coral} ${s.delivered.coral} / 3`;
+    const next = opponents[opponents.findIndex((o) => o.id === opponent.id) + 1];
+    const won = session.mode === 'solo' && winner === 'blue';
+    $('#next-opponent').hidden = !won || !next;
+    $('#next-opponent').textContent = next ? `Meet ${next.name} →` : 'Next challenge →';
+    $('#journey-result').hidden = session.mode !== 'solo';
+    $('#journey-result').textContent = won
+      ? next
+        ? `You beat ${opponent.name}! ${next.name} is ready: ${next.description}`
+        : 'You beat all three rivals! Replay a favourite or try the Standard setting.'
+      : winner
+        ? `${opponent.name} won this round. ${opponent.tip}`
+        : `Try a different route next time. ${opponent.tip}`;
     if (
       screen === 'play' &&
       !animating &&
@@ -276,16 +397,33 @@ function scheduleComputer() {
         const fallback = legalMoves(session.state)[0];
         if (fallback) void commit(fallback, false);
       };
-      current.postMessage({ state: session.state, difficulty: session.difficulty });
+      current.postMessage({
+        state: session.state,
+        difficulty: session.difficulty,
+        opponent: session.opponent,
+      });
     },
     Math.max(450, passUntil - performance.now()),
   );
 }
-function playSound(delivered: boolean) {
+function primeAudio() {
   if (!sound) return;
   try {
     audio ??= new AudioContext();
-    void audio.resume();
+    void audio.resume().catch(() => {});
+  } catch {
+    /* Audio support never blocks play. */
+  }
+}
+// Resume during the gesture, before move animations or computer replies lose activation.
+document.addEventListener('pointerup', primeAudio, { capture: true, passive: true });
+document.addEventListener('click', primeAudio, { capture: true, passive: true });
+document.addEventListener('keydown', primeAudio, { capture: true, passive: true });
+function playSound(delivered: boolean) {
+  if (!sound) return;
+  try {
+    primeAudio();
+    if (!audio) return;
     const oscillator = audio.createOscillator(),
       gain = audio.createGain();
     oscillator.type = 'sine';
@@ -317,7 +455,7 @@ function showDelivery(side: Side) {
     render();
   }, 2000);
 }
-async function commit(move: Move, human: boolean) {
+async function commit(move: Move, human: boolean, origin?: { x: number; y: number }) {
   if (animating || !legalMoves(session.state).some((m) => m.from === move.from && m.to === move.to))
     return;
   const previous = session.state,
@@ -347,10 +485,15 @@ async function commit(move: Move, human: boolean) {
     $('#board').append(dot);
     const destination = $(`[data-node="${move.to}"] .piece`);
     destination.style.visibility = 'hidden';
-    const size = $('#board').clientWidth;
-    const atGoal = `translate(calc(-50% + ${((tx - x) / 500) * size}px), calc(-50% + ${((ty - y) / 500) * size}px))`;
-    await dot.animate([{ transform: 'translate(-50%, -50%)' }, { transform: atGoal }], {
-      duration: 260,
+    const width = $('#board').clientWidth,
+      height = $('#board').clientHeight;
+    const rect = $('#board').getBoundingClientRect();
+    const start = origin
+      ? `translate(calc(-50% + ${origin.x - rect.left - (x / 500) * width}px), calc(-50% + ${origin.y - rect.top - (y / 500) * height}px))`
+      : 'translate(-50%, -50%)';
+    const atGoal = `translate(calc(-50% + ${((tx - x) / 500) * width}px), calc(-50% + ${((ty - y) / 500) * height}px))`;
+    await dot.animate([{ transform: start }, { transform: atGoal }], {
+      duration: origin ? 120 : 260,
       easing: 'ease-out',
       fill: 'forwards',
     }).finished;
@@ -361,8 +504,8 @@ async function commit(move: Move, human: boolean) {
       const marker = $(`#${side}-score .pip:nth-child(${session.state.delivered[side]})`),
         target = marker.getBoundingClientRect(),
         boardRect = $('#board').getBoundingClientRect();
-      const dx = target.left + target.width / 2 - boardRect.left - (x / 500) * size,
-        dy = target.top + target.height / 2 - boardRect.top - (y / 500) * size;
+      const dx = target.left + target.width / 2 - boardRect.left - (x / 500) * width,
+        dy = target.top + target.height / 2 - boardRect.top - (y / 500) * height;
       await dot.animate(
         [
           { transform: atGoal, offset: 0 },
@@ -399,6 +542,27 @@ async function commit(move: Move, human: boolean) {
   );
   scheduleComputer();
 }
+const cancelDrag = enableDragging($('#board'), {
+  canStart: (n) =>
+    screen === 'play' &&
+    !thinking &&
+    !animating &&
+    !session.state.result &&
+    !document.querySelector('dialog[open]') &&
+    (session.mode === 'local' || session.state.turn === 'blue') &&
+    session.state.board[n] === session.state.turn,
+  moves: (n) => legalMoves(session.state).filter((m) => m.from === n),
+  side: () => session.state.turn,
+  select: (n) => {
+    selected = n;
+    render();
+  },
+  commit: (move, origin) => {
+    void commit(move, true, origin);
+  },
+  announce,
+});
+updateSettings();
 $('#board').addEventListener('click', (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-node]');
   if (
@@ -451,6 +615,7 @@ $('#undo-button').addEventListener('click', () => {
 });
 function openDialog(id: string) {
   if (animating) return;
+  cancelDrag();
   cancelComputer();
   document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach((d) => d.close());
   $<HTMLDialogElement>(id).showModal();
@@ -459,6 +624,8 @@ function openDialog(id: string) {
 function setScreen(next: 'home' | 'play') {
   if (animating) return;
   cancelComputer();
+  cancelDrag();
+  if (next === 'home') releaseFocus();
   screen = next;
   returnToPause = false;
   try {
@@ -471,25 +638,73 @@ function setScreen(next: 'home' | 'play') {
   render();
   scheduleComputer();
   if (!document.querySelector('dialog[open]'))
-    $(screen === 'play' ? '#pause-button' : '#solo-button').focus();
+    $(screen === 'play' ? '#pause-button' : `[data-rival="${chosenOpponent}"]`).focus();
   window.scrollTo(0, 0);
 }
-function setup(mode: Session['mode']) {
-  $<HTMLSelectElement>('#mode-select').value = mode;
-  $('#difficulty-field').hidden = mode === 'local';
-  $('#setup-note').textContent =
-    `Blue moves first. ${mode === 'solo' ? 'You play as Blue.' : 'Pass the device between turns.'}${hasGame && !session.state.result && session.state.turns > 0 ? ' Starting this match replaces your saved unfinished match.' : ''}`;
-  openDialog('#setup');
+function saveHomeChoice() {
+  try {
+    localStorage.setItem(
+      'dama-home-choice-v1',
+      JSON.stringify({
+        opponent: chosenOpponent,
+        difficulty: $<HTMLSelectElement>('#difficulty-select').value,
+      }),
+    );
+  } catch {
+    /* Selection remains available in memory. */
+  }
 }
-$('#mode-select').addEventListener('change', () =>
-  setup($<HTMLSelectElement>('#mode-select').value as Session['mode']),
-);
-$('#solo-button').addEventListener('click', () => setup('solo'));
-$('#local-button').addEventListener('click', () => setup('local'));
-$('#start-button').addEventListener('click', () => startNewMatch(true));
+function requestHomeMatch(mode: Session['mode']) {
+  if (animating) return;
+  if (hasGame && !session.state.result && session.state.turns > 0) {
+    pendingStart = mode;
+    $('#restart-detail').textContent =
+      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} will replace your unfinished match. Your rival progress is kept.`;
+    $('#confirm-new').textContent = 'Replace match & play';
+    openDialog('#restart');
+  } else startNewMatch(mode);
+}
+function renderOpponents() {
+  if (!unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
+  const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
+  $('#journey-progress').textContent =
+    `${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
+  $('#opponent-cards').innerHTML = opponents
+    .map((o, index) => {
+      const available = unlocked(progress, o.id),
+        wins = progress.wins[o.id];
+      return `<button class="opponent-card" data-rival="${o.id}" aria-pressed="${chosenOpponent === o.id}" ${available ? '' : 'disabled'}>
+      <span class="opponent-symbol rival-${o.id}" aria-hidden="true">${o.symbol}</span><strong>${o.name}</strong><small>${o.level}</small>
+      <span class="rival-progress">${wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Ready to challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
+    })
+    .join('');
+  const o = opponentFor(chosenOpponent);
+  $('#opponent-profile').innerHTML =
+    `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws</small>`;
+  $('#start-button').textContent = `Play ${o.name} →`;
+}
+$('#opponent-cards').addEventListener('click', (event) => {
+  const card = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-rival]');
+  if (!card || card.disabled) return;
+  chosenOpponent = card.dataset.rival as OpponentId;
+  saveHomeChoice();
+  renderOpponents();
+  $<HTMLButtonElement>(`[data-rival="${chosenOpponent}"]`).focus();
+});
+$('#next-opponent').addEventListener('click', () => {
+  const next = opponents[opponents.findIndex((o) => o.id === session.opponent) + 1];
+  if (!next || !unlocked(progress, next.id)) return;
+  chosenOpponent = next.id;
+  saveHomeChoice();
+  setScreen('home');
+});
+$('#difficulty-select').addEventListener('change', saveHomeChoice);
+$('#local-button').addEventListener('click', () => requestHomeMatch('local'));
+$('#start-button').addEventListener('click', () => requestHomeMatch('solo'));
 $('#continue-button').addEventListener('click', () => {
   resultDismissed = false;
   setScreen('play');
+  if ($<HTMLInputElement>('#immersive').checked) void enterFocus();
 });
 $('#home-button').addEventListener('click', () => setScreen('home'));
 document
@@ -505,11 +720,14 @@ $('#pause-help').addEventListener('click', () => {
   openDialog('#help');
 });
 $('#pause-new').addEventListener('click', requestNewMatch);
-$('#learn-button').addEventListener('click', () => openDialog('#help'));
 $('#help-button').addEventListener('click', () => openDialog('#help'));
 $('#settings-button').addEventListener('click', () => openDialog('#settings'));
 function requestNewMatch() {
   if (animating) return;
+  pendingStart = false;
+  $('#restart-detail').textContent =
+    'Start again with the same players and challenge setting. This replaces your unfinished match.';
+  $('#confirm-new').textContent = 'Start new match';
   if (session.state.result || session.state.turns === 0) startNewMatch();
   else openDialog('#restart');
 }
@@ -531,18 +749,20 @@ document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
     scheduleComputer();
   });
 });
-function startNewMatch(fresh = false) {
+function startNewMatch(fresh: Session['mode'] | false = false) {
   cancelComputer();
   clearDelivery();
   const starter = fresh ? 'blue' : other(session.starter);
   session = {
     state: initialState(starter),
     starter,
-    mode: fresh ? ($<HTMLSelectElement>('#mode-select').value as Session['mode']) : session.mode,
+    mode: fresh || session.mode,
     difficulty: fresh
       ? ($<HTMLSelectElement>('#difficulty-select').value as Session['difficulty'])
       : session.difficulty,
     undo: [],
+    opponent: fresh ? chosenOpponent : session.opponent,
+    matchId: createMatchId(),
   };
   hasGame = true;
   selected = null;
@@ -553,9 +773,10 @@ function startNewMatch(fresh = false) {
   persist();
   render();
   setScreen('play');
+  if ($<HTMLInputElement>('#immersive').checked) void enterFocus();
   announce('New match started.');
 }
-$('#confirm-new').addEventListener('click', () => startNewMatch());
+$('#confirm-new').addEventListener('click', () => startNewMatch(pendingStart));
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     cancelComputer();
