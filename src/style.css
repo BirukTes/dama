@@ -1423,7 +1423,7 @@ body.high-contrast[data-theme='dark'][data-opponent='guardian'] {
 .lobby-heading {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: 20px;
 }
 .lobby-heading .eyebrow {
