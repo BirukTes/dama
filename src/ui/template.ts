@@ -51,6 +51,16 @@ export const template = /* HTML */ `
               />
               <span>Journey</span>
             </label>
+            <label id="puzzles-button">
+              <input
+                class="sr-only"
+                type="radio"
+                name="play-track"
+                id="track-puzzles"
+                value="puzzles"
+              />
+              <span>Puzzles</span>
+            </label>
             <label>
               <input
                 class="sr-only"
@@ -65,10 +75,24 @@ export const template = /* HTML */ `
         </div>
         <button class="primary" id="continue-button" hidden>
           <span id="continue-label">Continue match</span>
-          →
+          <span class="continue-arrow" aria-hidden="true">→</span>
+          <small id="continue-context"></small>
         </button>
       </div>
       <p class="journey-summary" id="journey-progress"></p>
+      <section id="puzzle-home" aria-labelledby="puzzles-title" hidden>
+        <div class="puzzle-pack-heading">
+          <div>
+            <h2 id="puzzles-title">Classic · First steps</h2>
+            <p>Six short challenges, from one to four moves. Play Blue; Coral defends.</p>
+          </div>
+          <div class="puzzle-pack-actions">
+            <p id="pack-progress"></p>
+            <button class="quiet" id="resume-puzzle" hidden></button>
+          </div>
+        </div>
+        <div id="puzzle-list" class="puzzle-list"></div>
+      </section>
       <div class="opponent-cards" id="opponent-cards" aria-label="Choose an opponent"></div>
       <div class="lobby-bottom">
         <section
@@ -118,7 +142,6 @@ export const template = /* HTML */ `
               </label>
             </div>
           </div>
-          <button class="quiet" id="puzzles-button">Puzzles · 0 / 6</button>
           <button class="primary" id="start-button">Play Coral →</button>
           <button class="quiet" id="local-button">
             Play with a friend
@@ -271,19 +294,6 @@ export const template = /* HTML */ `
     </div>
   </dialog>
   ${helpMarkup} ${tutorialMarkup}
-  <dialog id="puzzles-dialog" aria-labelledby="puzzles-title">
-    <div class="dialog-top">
-      <p class="eyebrow">SIX WAYS TO THINK</p>
-      <button class="quiet close" aria-label="Close puzzles">Close ×</button>
-    </div>
-    <h2 id="puzzles-title">Classic · First steps</h2>
-    <p class="dialog-note">
-      Play Blue. Deliver all remaining pawns within the move limit. Only your moves count; Coral
-      defends. Six challenges, from one to four moves. Puzzles save separately from your match. All
-      six are free to try.
-    </p>
-    <div id="puzzle-list" class="puzzle-list"></div>
-  </dialog>
   <dialog id="puzzle-hint-dialog" aria-labelledby="puzzle-hint-title">
     <div class="dialog-top">
       <p class="eyebrow">A SMALL NUDGE</p>

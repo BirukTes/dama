@@ -125,7 +125,7 @@ try {
   assert.ok(!rivals || Object.values(rivals.wins).every((n) => n === 0));
   await page.locator('#result-panel .go-home').click();
   assert.equal(await page.evaluate(() => localStorage.getItem('dama-session-v1')), match);
-  assert.match(await page.locator('#puzzles-button').textContent(), /6 \/ 6/);
+  assert.match(await page.locator('#pack-progress').textContent(), /6 \/ 6/);
   await page.locator('#continue-button').click();
   assert.equal(
     await page

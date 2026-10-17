@@ -55,7 +55,8 @@ const journeys = Object.fromEntries(
   Object.values(maps).map((m) => [m.id, loadProgress(m.id)]),
 ) as Record<MapId, ReturnType<typeof loadProgress>>;
 const selectedTrack = () =>
-  $<HTMLInputElement>('input[name="play-track"]:checked').value as NonNullable<Session['track']>;
+  $<HTMLInputElement>('input[name="play-track"]:checked').value as
+    'journey' | 'puzzles' | 'free-play';
 let puzzleProgress = loadPuzzleProgress();
 let chosenOpponent: OpponentId = session.opponent;
 let renderedMap: MapId | null = null;
@@ -95,7 +96,8 @@ $<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
 $<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;
 try {
   const choice = JSON.parse(localStorage.getItem('dama-home-choice-v1') ?? '{}');
-  if (choice.track === 'free-play') $<HTMLInputElement>('#track-free-play').checked = true;
+  if (['journey', 'puzzles', 'free-play'].includes(choice.track))
+    $<HTMLInputElement>(`#track-${choice.track}`).checked = true;
   if (isOpponent(choice.opponent)) chosenOpponent = choice.opponent;
   if (isMapId(choice.map)) $<HTMLInputElement>(`#map-${choice.map}`).checked = true;
   if (['gentle', 'standard'].includes(choice.difficulty))
@@ -317,7 +319,17 @@ function render() {
   document.body.classList.toggle('playing', screen === 'play');
   document.body.classList.toggle('puzzling', screen === 'play' && !!puzzle);
   $('#continue-button').hidden = !hasGame;
-  $('#continue-label').textContent = ended ? 'Review last match' : 'Continue match';
+  const matchKind = isJourney(session)
+    ? 'Journey'
+    : session.mode === 'local'
+      ? 'Friend match'
+      : 'Free play';
+  $('#continue-label').textContent = `${ended ? 'Review' : 'Continue'} ${matchKind}`;
+  $('#continue-context').textContent = `${map.name}`;
+  $('#continue-button').setAttribute(
+    'aria-label',
+    `${ended ? 'Review' : 'Continue'} ${matchKind} on ${map.name}${session.mode === 'solo' ? ` against ${opponent.name}` : ''}`,
+  );
   if (screen === 'home') renderOpponents();
   $('#home-button').setAttribute(
     'aria-label',
@@ -779,7 +791,13 @@ function setScreen(next: 'home' | 'play') {
   render();
   scheduleComputer();
   if (!document.querySelector('dialog[open]'))
-    $(screen === 'play' ? '#pause-button' : `[data-rival="${chosenOpponent}"]`).focus();
+    $(
+      screen === 'play'
+        ? '#pause-button'
+        : selectedTrack() === 'puzzles'
+          ? '#track-puzzles'
+          : `[data-rival="${chosenOpponent}"]`,
+    ).focus();
   window.scrollTo(0, 0);
 }
 function saveHomeChoice() {
@@ -808,6 +826,16 @@ function requestHomeMatch(mode: Session['mode']) {
   } else startNewMatch(mode);
 }
 function renderOpponents() {
+  const puzzleMode = selectedTrack() === 'puzzles';
+  $('#puzzle-home').hidden = !puzzleMode;
+  $('#opponent-cards').hidden = puzzleMode;
+  $('.lobby-bottom').hidden = puzzleMode;
+  if (puzzleMode) {
+    $('#journey-progress').textContent =
+      'Puzzles · Solve a position within the move limit. Separate from your match and Journey.';
+    renderPuzzles();
+    return;
+  }
   const map = mapFor(selectedMap());
   const practice = selectedTrack() === 'free-play';
   const progress = journeys[map.id];
@@ -839,8 +867,6 @@ function renderOpponents() {
   $('#opponent-profile').innerHTML =
     `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${practice ? `${map.name} · Free play · No Journey records` : `${map.name} · ${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws`}</small>`;
   $('#start-button').textContent = `Play ${o.name} →`;
-  $('#puzzles-button').textContent =
-    `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length}`;
 }
 $('#opponent-cards').addEventListener('click', (event) => {
   const card = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-rival]');
@@ -954,7 +980,11 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
     state: initialState(starter, fresh ? selectedMap() : session.state.map),
     starter,
     mode: fresh || session.mode,
-    track: fresh ? (fresh === 'local' ? 'free-play' : selectedTrack()) : session.track,
+    track: fresh
+      ? fresh === 'local' || selectedTrack() === 'free-play'
+        ? 'free-play'
+        : 'journey'
+      : session.track,
     difficulty: fresh ? selectedDifficulty() : session.difficulty,
     undo: [],
     opponent: fresh ? chosenOpponent : session.opponent,
@@ -974,6 +1004,13 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
 }
 $('#confirm-new').addEventListener('click', () => startNewMatch(pendingStart));
 function renderPuzzles() {
+  $('#pack-progress').textContent =
+    `${Object.keys(puzzleProgress).length} / ${puzzles.length} solved`;
+  const p = savedPuzzle?.puzzleId && puzzleFor(savedPuzzle.puzzleId);
+  const resume = p && !puzzleOutcome(savedPuzzle!.state, p, savedPuzzle!.undo.length);
+  $('#resume-puzzle').hidden = !resume;
+  $('#resume-puzzle').textContent = p ? `Continue puzzle · ${p.title} →` : '';
+
   $('#puzzle-list').innerHTML = puzzles
     .map((p, index) => {
       const completed = puzzleProgress[p.id];
@@ -981,7 +1018,7 @@ function renderPuzzles() {
         savedPuzzle?.puzzleId === p.id &&
         !puzzleOutcome(savedPuzzle.state, p, savedPuzzle.undo.length);
       const preview = `<svg viewBox="0 0 100 100" aria-hidden="true">${p.board.map((side, n) => `<circle cx="${16 + (n % 3) * 34}" cy="${16 + Math.floor(n / 3) * 34}" r="${side ? 8 : 3}" class="preview-${side ?? 'empty'}"/>`).join('')}</svg>`;
-      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>${p.theme} · Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'Continue your saved attempt →' : 'Try this puzzle →'}</small></span></button>`;
+      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'Continue your saved attempt →' : 'Try this puzzle →'}</small></span></button>`;
     })
     .join('');
 }
@@ -1020,9 +1057,8 @@ function startPuzzle(id: string, retry = false) {
   if ($<HTMLInputElement>('#immersive').checked) void enterFocus();
   announce(`${puzzle.title}. Win within ${puzzle.moves} of your moves. Coral defends.`);
 }
-$('#puzzles-button').addEventListener('click', () => {
-  renderPuzzles();
-  openDialog('#puzzles-dialog');
+$('#resume-puzzle').addEventListener('click', () => {
+  if (savedPuzzle?.puzzleId) startPuzzle(savedPuzzle.puzzleId);
 });
 $('#puzzle-list').addEventListener('click', (event) => {
   const card = (event.target as HTMLElement).closest<HTMLElement>('[data-puzzle]');

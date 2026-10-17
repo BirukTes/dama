@@ -92,8 +92,8 @@ try {
   assert.match(await page.locator('#board-map-label').textContent(), /Classic/);
   await page.locator('#home-button').click();
   assert.deepEqual((await saved()).state, unfinished.state);
-  await page.locator('label:has(#map-classic)').click();
   await page.locator('label:has(#track-journey)').click();
+  await page.locator('label:has(#map-classic)').click();
   assert.equal(await page.locator('[data-rival="guardian"]').isDisabled(), true);
   await page.locator('#continue-button').click();
   assert.equal(await page.locator('#board line').count(), 12);

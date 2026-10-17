@@ -34,6 +34,7 @@ npm.cmd run test:browser
 npm.cmd run test:appearance
 npm.cmd run test:journey
 npm.cmd run test:progression
+npm.cmd run test:modes
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
@@ -70,7 +71,7 @@ The lesson runs in its own modal board. It never replaces a match, puzzle attemp
 
 ## Puzzles
 
-Home's **Puzzles** button opens the **Classic · First steps** pack of six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
+Home's **Puzzles** tab shows the **Classic · First steps** pack of six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
 
 Hints give a clue and a verified next move in a dialog. Completion records distinguish hinted and unassisted solutions, with best move counts. Retry and next-puzzle actions are available in results. Attempts save separately from regular matches, so trying a puzzle preserves an unfinished solo or local game. Return Home to continue that match; select the saved puzzle to resume its attempt. Puzzles do not unlock rivals or add to rival statistics.
 
