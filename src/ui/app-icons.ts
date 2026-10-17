@@ -61,5 +61,5 @@ export function initAppIcons() {
     (navigator as Navigator & { standalone?: boolean }).standalone === true;
   document.querySelector('#icon-install-note')!.textContent = standalone
     ? 'You’re running the home-screen app. Use the browser preview to test another installation icon.'
-    : 'Icon installation testing is available now. Offline play is coming next.';
+    : 'Check Install & offline play in Settings for download readiness and installation help.';
 }

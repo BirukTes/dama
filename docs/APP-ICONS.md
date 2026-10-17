@@ -16,10 +16,10 @@ Each family exports opaque 32px favicon, 180px Apple touch icon, 192/512px `any`
 
 ## Limits and verification
 
-This milestone enables icon choice and installation previews. It does not register a service worker, provide offline play, guarantee browser install eligibility, or immediately replace an already-installed icon. Browsers may recognise DA’MA as already installed because all variants share its identity. Physical iPhone/Android checks of the actual installed icon remain necessary; a fresh testing profile is useful for comparing choices.
+Icon choice and installation previews are available. The [offline implementation](OFFLINE-INSTALLATION.md) registers a service worker in production and prepares offline play. Browser install eligibility and immediate replacement of an existing icon are not guaranteed. Browsers may recognise DA’MA as already installed because all variants share its identity. Physical iPhone/Android checks of the actual installed icon remain necessary; a fresh testing profile is useful for comparing choices.
 
 `npm.cmd run test:icons` verifies all four families and PNG sizes, default/invalid/saved selections, game-theme independence, launch parameters, static preview metadata, Chromium manifest parsing, prompt/dismissal/install event handling and bootstrap fallback. Set `DAMA_TEST_URL=http://localhost:4173` for the built preview. Native prompt behaviour is simulated by this test; it does not claim to verify a real OS installation.
 
 Sources: [Web app manifests](https://web.dev/articles/add-manifest), [PWA metadata updates](https://web.dev/learn/pwa/update#updating_metadata), [WebKit home-screen icon support](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/). The UI makes no promise of automatic light/dark icon switching.
 
-Next: offline caching, safe app updates and physical-device installation checks.
+Offline caching and safe updates are implemented; physical-device installation checks remain.

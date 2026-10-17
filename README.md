@@ -36,6 +36,7 @@ npm.cmd run test:journey
 npm.cmd run test:progression
 npm.cmd run test:modes
 npm.cmd run test:icons
+npm.cmd run test:offline
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
@@ -96,7 +97,7 @@ The original font copyright and licence are included in `public/licenses/dm-sans
 
 The baseline analysis enumerates 2,044 reachable positions, including 10 automatic-pass transitions and no mutual-blocking terminal positions. Retrograde classification treats indefinite cycles as draws and finds both initial positions drawn under perfect play. This excludes threefold-repetition history and the 100-turn cap, and does not establish human match quality or final-ruleset balance.
 
-Offline installation, safe updates, save export/import, and physical-phone validation remain upcoming. The current build is not an installable/offline PWA. The interactive tutorial is now available. Offline installation and safe update handling are next. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
+The interactive tutorial and installable/offline production build are available. Save export/import, further challenge packs, difficulty tuning and physical-phone validation remain upcoming. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
 
 ## App icons and installation testing
 
@@ -104,7 +105,7 @@ Settings → **App icon** offers Monogram Dark (default), Monogram Light, Board 
 
 Each set includes 32px favicon, 180px Apple touch icon, 192/512px app icons and a separate 512px maskable export. Generated masters and prompt briefs are in [design/app-icons](design/app-icons/README.md). The normal build uses committed exports, without an image-generation dependency.
 
-This enables icon/installation testing, not offline caching. Native installation and existing-icon updates are browser-controlled. Use the HTTPS deployment for phone installation testing; test the chosen result on a physical device. See [icon and installation notes](docs/APP-ICONS.md).
+The production build also prepares offline play after the first online visit. Native installation and existing-icon updates are browser-controlled. Use the HTTPS deployment for phone installation testing; test the chosen result on a physical device. See [icon and installation notes](docs/APP-ICONS.md).
 
 ## Hosting
 
@@ -114,7 +115,15 @@ See [the deployment guide](docs/CLOUDFLARE-DEPLOYMENT.md) for dashboard steps, v
 
 Direct Upload can accept the built folder or a release ZIP for manual testing. A Direct Upload project cannot later switch to Git integration; automatic deployments require a separate project. See [Cloudflare Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/).
 
-HTTP Wi-Fi previews are useful for phone testing; production PWA installation requires HTTPS. Hosting alone does not provide offline caching.
+HTTP Wi-Fi previews are useful for phone testing; use the HTTPS deployment for phone installation and offline caching. Open **Settings → Install & offline play** and wait for **Ready for offline play** before disconnecting. Development mode intentionally does not register a service worker; test offline behaviour with `npm.cmd run build` and `npm.cmd run preview -- --port 4173`.
+
+## Offline play and updates
+
+The production build caches the complete game, all six maps, both AI workers’ logic, puzzles, tutorial, fonts, icon choices and installation previews. No account is required. In **Settings → Install & offline play**, check download readiness, request installation when supported, or read iPhone Add to Home Screen instructions. Installed-app detection hides installation guidance when running standalone; a browser tab is not assumed to mean the app is uninstalled.
+
+New releases download in the background and wait. An **Update & reload** action is available from Home, including Home’s Settings. It verifies current saves before activation and asks you to close other DA’MA windows first. Updates never reload an ongoing game automatically. Application caches are separate from saved progress, and the previous release remains cached during handover. A failed or mismatched download cannot replace the working release.
+
+See [offline and installation notes](docs/OFFLINE-INSTALLATION.md) for testing, cache recovery, deployment and browser limits. Physical iPhone/Android installation checks remain necessary.
 
 ## Licence
 

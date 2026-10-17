@@ -18,6 +18,7 @@ import {
 import { enableDragging } from './ui/drag';
 import { initTutorial } from './ui/tutorial';
 import { initAppIcons } from './ui/app-icons';
+import { initPwa } from './pwa/client';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
@@ -30,6 +31,7 @@ const selectedDifficulty = () =>
   $<HTMLInputElement>('input[name="challenge"]:checked').value as Session['difficulty'];
 const names: Record<Side, string> = { blue: 'Blue', coral: 'Coral' };
 let mainSession = loadSession();
+let offlineControls: ReturnType<typeof initPwa> | undefined;
 let savedPuzzle = loadSession('dama-puzzle-session-v1');
 const restored = (() => {
   try {
@@ -489,6 +491,7 @@ function render() {
     ended || session.undo.length === 0 || thinking || animating;
   $('#move-count').textContent = `TURN ${s.turns + Number(!s.result)}`;
   $('#save-status').textContent = storageAvailable ? 'SAVED ON THIS DEVICE' : 'SAVING UNAVAILABLE';
+  offlineControls?.refresh();
 }
 function cancelComputer() {
   if (timer) clearTimeout(timer);
@@ -1094,6 +1097,16 @@ document.addEventListener('visibilitychange', () => {
 });
 restorePassNotice();
 if (hasGame) persist();
+offlineControls = initPwa({
+  canUpdate: () => screen === 'home' && !animating,
+  save: () => {
+    cancelComputer();
+    cancelDrag();
+    if (mainSession && !saveSession(mainSession)) return false;
+    if (savedPuzzle && !saveSession(savedPuzzle)) return false;
+    return !hasGame || saveSession(session);
+  },
+});
 render();
 if (restored)
   announce(

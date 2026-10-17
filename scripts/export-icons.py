@@ -47,7 +47,7 @@ for variant in VARIANTS:
 <h1>{label}</h1><p>This icon is selected for a new DA’MA installation.</p>
 <button id="install-button" hidden>Install DA’MA</button><p id="install-status" role="status"></p>
 <p id="install-instructions">On iPhone, open this page in Safari and use Share → Add to Home Screen. On other devices, use the browser’s Install app or Add to Home Screen option if offered.</p>
-<p class="note">Already installed? This preview does not instantly replace an existing home-screen icon. Light and dark are separate choices, independent of the game theme. Offline play is still coming.</p>
+<p class="note">Already installed? This preview does not instantly replace an existing home-screen icon. Light and dark are separate choices, independent of the game theme. Open the game once online and check Settings → Install &amp; offline play before relying on offline access.</p>
 <a class="back" href="/?app-icon={variant}">Back to DA’MA →</a>
 </main></body></html>
 ''', encoding="utf-8")

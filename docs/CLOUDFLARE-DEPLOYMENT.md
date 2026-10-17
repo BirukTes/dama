@@ -33,6 +33,7 @@ On the returned production URL:
 3. Open Pause, resume, and reload to verify the saved match.
 4. Check Light/Dark, rules, and Focus view on a phone in both orientations.
 5. Follow Source on GitHub and the MIT licence link.
+6. In Settings → Install & offline play, wait for readiness. Install on a phone, open the installed app online once, then check airplane-mode launch and saved-game resume.
 
 Local verification against the production bundle:
 
@@ -58,13 +59,13 @@ To run that smoke check against the deployed site, set `DAMA_TEST_URL` to the ex
 
 Pushing to `main` triggers a new production build after Git integration is configured. Other enabled branches can receive preview deployments. Cloudflare’s preview deployments carry `noindex` by default; the production site can be indexed when publicly accessible and not otherwise blocked.
 
-`public/_headers` asks browsers to revalidate the entry HTML and gives Vite’s hashed assets a long immutable cache lifetime. Vite’s local preview does not simulate Cloudflare’s response-header rules; verify the live headers after the first deployment.
+`public/_headers` asks browsers to revalidate the entry HTML, service worker and installation metadata, and gives Vite’s hashed assets a long immutable cache lifetime. The build generates the offline release automatically. Serve those files unchanged so their integrity hashes remain valid. Vite’s local preview does not simulate Cloudflare’s response-header rules; verify the live headers after deployment. See [offline installation and update testing](OFFLINE-INSTALLATION.md).
 
 Saved progress belongs to a particular origin. A save from the Wi-Fi development URL will not automatically appear on the Cloudflare URL. Clearing browser data can also remove progress.
 
 ## Remaining work
 
-Hosting gives the game a stable HTTPS link and removes the need to keep the PC running. It does not yet make this build installable or reliably offline. The manifest, home-screen icons, service worker, safe update flow, and physical-device offline tests remain a separate milestone.
+The manifest, four icon choices, service worker and safe update flow are implemented locally. Deploy this revision, then verify real installation, airplane-mode relaunch and updates on iPhone and Android. Automated browser checks do not replace those physical-device checks.
 
 After the actual production URL is known, add it to the GitHub repository’s website field and README. Use that stable URL for any canonical/share metadata and search-engine submission.
 

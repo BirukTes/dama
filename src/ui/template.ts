@@ -304,6 +304,10 @@ export const template = /* HTML */ `
     <p class="dialog-note" id="puzzle-hint-text"></p>
     <button class="primary close">Back to puzzle →</button>
   </dialog>
+  <div id="pwa-update-toast" role="status" hidden>
+    <span>A new version is ready.</span>
+    <button class="quiet" id="pwa-update">Update &amp; reload</button>
+  </div>
   <dialog id="settings">
     <div class="dialog-top">
       <p class="eyebrow">MAKE YOURSELF AT HOME</p>
@@ -319,6 +323,16 @@ export const template = /* HTML */ `
       </select>
     </label>
     ${appIconMarkup}
+    <details id="pwa-settings">
+      <summary>Install &amp; offline play</summary>
+      <p id="pwa-status" class="dialog-note" role="status"></p>
+      <p id="pwa-installed" class="dialog-note" hidden>Running as a home-screen app.</p>
+      <button class="quiet" id="pwa-install">How to install</button>
+      <p id="pwa-install-help" class="dialog-note" hidden></p>
+      <button class="quiet" id="pwa-retry" hidden>Prepare offline play</button>
+      <p id="pwa-update-note" class="dialog-note" hidden></p>
+      <button class="quiet" id="pwa-update-settings" hidden>Update &amp; reload</button>
+    </details>
     <label class="check">
       <input type="checkbox" id="immersive" />
       Focus view · more board, fewer tips
@@ -337,7 +351,8 @@ export const template = /* HTML */ `
     </label>
     <p class="dialog-note">
       Focus view keeps scores and turn status visible. Your match saves on this browser. Clearing
-      browser data removes it. Offline installation comes in a later milestone.
+      browser data removes it. Open Install &amp; offline play above to check this device’s
+      readiness.
     </p>
     <button class="primary close">Done</button>
     <p class="dialog-note">
