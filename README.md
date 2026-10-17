@@ -22,6 +22,7 @@ npm.cmd run format:check
 npm.cmd test
 npm.cmd run build
 npm.cmd run analyze
+npm.cmd run analyze:rivals
 ```
 
 With the development server running:
@@ -30,6 +31,8 @@ With the development server running:
 npm.cmd run test:browser
 npm.cmd run test:appearance
 npm.cmd run test:journey
+npm.cmd run test:sound
+npm.cmd run test:puzzles
 ```
 
 Browser checks use installed Microsoft Edge. They cover complete matches, computer replies, undo, saved sessions, pause/navigation, keyboard controls, themes, scoring animations, reduced motion, portrait/landscape layouts, mouse/touch dragging, rival unlocks, and result deduplication. Screenshots go into the ignored `.inspection` directory. Desktop emulation does not replace testing on physical phones.
@@ -45,6 +48,16 @@ Provisional rules pass a blocked player and draw on mutual blocking, threefold r
 The prototype supports computer matches and two-player practice on one device. Practice undo restores the previous human turn in solo mode. The computer follows the same rules, uses bounded search in a worker, and pauses on Home or while menus are open. Gentle and Standard are heuristic difficulties rather than proven optimal play.
 
 Solo play follows a three-rival journey: Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Win against each rival to unlock the next; either challenge setting counts. Rival profiles show playing styles and local win/loss/draw records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
+
+All rivals now take immediate wins and avoid an immediate losing reply when possible, including on Gentle. Completed iterative search depths share a 24,000-node decision budget; equivalent moves can vary and repeated routes are discouraged when viable. Guardian values both sides' deliveries equally rather than treating an even score as a reason to settle for a draw. These are heuristic styles; human difficulty and phone performance still need feedback.
+
+## Puzzles
+
+Home's **Puzzles** button opens six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
+
+Hints give a clue and a verified next move in a dialog. Completion records distinguish hinted and unassisted solutions, with best move counts. Retry and next-puzzle actions are available in results. Attempts save separately from regular matches, so trying a puzzle preserves an unfinished solo or local game. Return Home to continue that match; select the saved puzzle to resume its attempt. Puzzles do not unlock rivals or add to rival statistics.
+
+See [puzzle and rival verification notes](docs/PUZZLES-AND-RIVALS.md) for goals, proof scope, benchmark method, and limitations.
 
 ## Interface and saves
 
@@ -64,7 +77,7 @@ The original font copyright and licence are included in `public/licenses/dm-sans
 
 The baseline analysis enumerates 2,044 reachable positions, including 10 automatic-pass transitions and no mutual-blocking terminal positions. Retrograde classification treats indefinite cycles as draws and finds both initial positions drawn under perfect play. This excludes threefold-repetition history and the 100-turn cap, and does not establish human match quality or final-ruleset balance.
 
-Guided teaching, authored puzzles, offline installation, safe updates, save export/import, and physical-phone validation of the new controls remain upcoming. The current build is not an installable/offline PWA. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for this update and its remaining device checks.
+Guided teaching, offline installation, safe updates, save export/import, and physical-phone validation of the new puzzle UI remain upcoming. The current build is not an installable/offline PWA. The next planned phase is the interactive tutorial, followed by offline installation; neither is part of this update. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
 
 ## Hosting
 
