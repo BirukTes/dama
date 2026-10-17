@@ -28,4 +28,4 @@ New sessions persist `track: journey | free-play` alongside the existing solo/lo
 
 Unit checks cover independent map records, legacy Classic preservation, old alternative saves, wins/losses/draws, unlock order, deduplication, excluded modes and save validation. `npm.cmd run test:progression` exercises 18 real delivery/unlock flows, reloads, next-rival/map navigation, mode persistence and puzzle isolation in the browser. Existing map, appearance, journey, audio, puzzle and production suites remain applicable.
 
-The next planned work is the guided tutorial, followed by offline installation and update handling. Map-specific puzzle packs and difficulty calibration need separate content/playtesting work.
+The guided tutorial is available through How to play; see [interactive help](INTERACTIVE-HELP.md). The next planned work is offline installation and update handling. Map-specific puzzle packs and difficulty calibration need separate content/playtesting work.

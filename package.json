@@ -23,7 +23,8 @@
     "test:production": "node tests/production-browser.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:progression": "node tests/progression-browser.mjs"
+    "test:progression": "node tests/progression-browser.mjs",
+    "test:tutorial": "node tests/tutorial-browser.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

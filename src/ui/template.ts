@@ -1,5 +1,6 @@
 import { mapFor, maps, type MapId } from '../game/maps';
 import { helpMarkup } from './help';
+import { tutorialMarkup } from './tutorial';
 export const boardLines = (id: MapId = 'classic') => {
   const { points, edges } = mapFor(id);
   return edges
@@ -269,7 +270,7 @@ export const template = /* HTML */ `
       <button class="quiet go-home">Save & return home</button>
     </div>
   </dialog>
-  ${helpMarkup}
+  ${helpMarkup} ${tutorialMarkup}
   <dialog id="puzzles-dialog" aria-labelledby="puzzles-title">
     <div class="dialog-top">
       <p class="eyebrow">SIX WAYS TO THINK</p>

@@ -34,6 +34,7 @@ npm.cmd run test:browser
 npm.cmd run test:appearance
 npm.cmd run test:journey
 npm.cmd run test:progression
+npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
 npm.cmd run test:maps
@@ -61,6 +62,12 @@ Home's board selector offers six maps: **Classic** (9 spots), **Crossroads** (9)
 
 All six maps have independent Journey records and rival unlocks. Free play makes every rival available on any map without affecting those records. Existing Classic progress is preserved; older alternative-board practice saves remain Free play. The six authored puzzles remain on Classic and save separately. See [the game structure](docs/GAME-STRUCTURE.md) and [the board catalogue and validation](docs/BOARD-MAPS.md) for shapes, analysis and playtesting limits, and [the original Crossroads delivery notes](docs/CROSSROADS.md).
 
+## Interactive help
+
+Open **How to play → Try guided lesson**, or **Pause → Rules** while playing. Six hands-on Classic positions teach one-connection moves, the centre stop, delivery, backwards movement, automatic passes and the third-delivery win. Tap, drag or use keyboard controls. Back, Reset and Exit are always available; you advance after making the guided move. Completion enables a replay label.
+
+The lesson runs in its own modal board. It never replaces a match, puzzle attempt or Journey record. Exiting from Pause returns to Pause; the computer stays stopped until Resume. See [the lesson notes](docs/INTERACTIVE-HELP.md).
+
 ## Puzzles
 
 Home's **Puzzles** button opens the **Classic · First steps** pack of six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
@@ -87,7 +94,7 @@ The original font copyright and licence are included in `public/licenses/dm-sans
 
 The baseline analysis enumerates 2,044 reachable positions, including 10 automatic-pass transitions and no mutual-blocking terminal positions. Retrograde classification treats indefinite cycles as draws and finds both initial positions drawn under perfect play. This excludes threefold-repetition history and the 100-turn cap, and does not establish human match quality or final-ruleset balance.
 
-Guided teaching, offline installation, safe updates, save export/import, and physical-phone validation of the new puzzle UI remain upcoming. The current build is not an installable/offline PWA. The next planned phase is the interactive tutorial, followed by offline installation; neither is part of this update. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
+Offline installation, safe updates, save export/import, and physical-phone validation remain upcoming. The current build is not an installable/offline PWA. The interactive tutorial is now available. Offline installation and safe update handling are next. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
 
 ## Hosting
 

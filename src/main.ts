@@ -16,6 +16,7 @@ import {
   isJourney,
 } from './persistence/progress';
 import { enableDragging } from './ui/drag';
+import { initTutorial } from './ui/tutorial';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
@@ -903,6 +904,7 @@ $('#pause-help').addEventListener('click', () => {
   openDialog('#help');
 });
 $('#pause-new').addEventListener('click', requestNewMatch);
+initTutorial(() => openDialog('#tutorial'));
 $('#help-button').addEventListener('click', () => openDialog('#help'));
 $('#settings-button').addEventListener('click', () => openDialog('#settings'));
 function requestNewMatch() {
@@ -931,7 +933,12 @@ document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
     .forEach((button) => button.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => {
     if (dialog.id === 'result-panel' && finished()) resultDismissed = true;
-    if (returnToPause && screen === 'play' && (dialog.id === 'settings' || dialog.id === 'help')) {
+    if (
+      returnToPause &&
+      screen === 'play' &&
+      !document.querySelector('dialog[open]') &&
+      ['settings', 'help', 'tutorial'].includes(dialog.id)
+    ) {
       returnToPause = false;
       openDialog('#pause');
       return;
