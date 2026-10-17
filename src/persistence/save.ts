@@ -1,6 +1,7 @@
 import { goals, key, type State } from '../game/rules';
 import type { Difficulty } from '../ai/search';
 import { isOpponent, type OpponentId } from '../game/opponents';
+import { puzzleFor } from '../game/puzzles';
 export interface Session {
   state: State;
   mode: 'solo' | 'local';
@@ -9,6 +10,8 @@ export interface Session {
   starter: 'blue' | 'coral';
   opponent?: OpponentId;
   matchId?: string;
+  puzzleId?: string;
+  puzzleHinted?: boolean;
 }
 const storageKey = 'dama-session-v1';
 export function validState(value: unknown): value is State {
@@ -55,9 +58,9 @@ export function validState(value: unknown): value is State {
   } else if (s.delivered.blue === 3 || s.delivered.coral === 3) return false;
   return true;
 }
-export function loadSession(): Session | null {
+export function loadSession(key = storageKey): Session | null {
   try {
-    const raw = localStorage.getItem(storageKey);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (
@@ -68,6 +71,8 @@ export function loadSession(): Session | null {
       !['blue', 'coral'].includes(data.starter) ||
       (data.opponent !== undefined && !isOpponent(data.opponent)) ||
       (data.matchId !== undefined && typeof data.matchId !== 'string') ||
+      (data.puzzleId !== undefined && (!puzzleFor(data.puzzleId) || data.mode !== 'solo')) ||
+      (data.puzzleHinted !== undefined && typeof data.puzzleHinted !== 'boolean') ||
       !Array.isArray(data.undo) ||
       data.undo.length > 100 ||
       !data.undo.every(validState)
@@ -80,7 +85,10 @@ export function loadSession(): Session | null {
 }
 export function saveSession(session: Session): boolean {
   try {
-    localStorage.setItem(storageKey, JSON.stringify({ version: 1, ...session }));
+    localStorage.setItem(
+      session.puzzleId ? 'dama-puzzle-session-v1' : storageKey,
+      JSON.stringify({ version: 1, ...session }),
+    );
     return true;
   } catch {
     return false;

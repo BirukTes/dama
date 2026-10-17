@@ -10,6 +10,9 @@ import { opponents, opponentFor, isOpponent, type OpponentId } from './game/oppo
 import { loadProgress, saveProgress, recordResult, unlocked } from './persistence/progress';
 import { enableDragging } from './ui/drag';
 import { createMatchId } from './persistence/match-id';
+import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
+import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
+import { loadPuzzleProgress, recordPuzzle, savePuzzleProgress } from './persistence/puzzles';
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string): T =>
   document.querySelector<T>(selector)!;
@@ -25,7 +28,20 @@ const nodeNames = [
   'bottom middle',
   'bottom right',
 ];
-const restored = loadSession();
+let mainSession = loadSession();
+let savedPuzzle = loadSession('dama-puzzle-session-v1');
+const restored = (() => {
+  try {
+    if (
+      sessionStorage.getItem('dama-screen') === 'play' &&
+      sessionStorage.getItem('dama-active-puzzle') === 'true'
+    )
+      return savedPuzzle ?? mainSession;
+  } catch {
+    /* Browser navigation can remain in memory. */
+  }
+  return mainSession;
+})();
 let session: Session = restored ?? {
   state: initialState(),
   mode: 'solo',
@@ -36,6 +52,7 @@ let session: Session = restored ?? {
 session.opponent ??= 'coral';
 session.matchId ??= createMatchId();
 let progress = loadProgress();
+let puzzleProgress = loadPuzzleProgress();
 let chosenOpponent: OpponentId = session.opponent;
 let pendingStart: Session['mode'] | false = false;
 let rotationDismissed = false;
@@ -213,7 +230,16 @@ function announce(text: string) {
   $('#announcement').textContent = text;
 }
 function persist() {
+  if (session.puzzleId) savedPuzzle = session;
+  else mainSession = session;
   storageAvailable = saveSession(session);
+}
+function activePuzzle() {
+  return puzzleFor(session.puzzleId);
+}
+function finished() {
+  const p = activePuzzle();
+  return !!session.state.result || !!(p && puzzleOutcome(session.state, p, session.undo.length));
 }
 function restorePassNotice() {
   const { history, result, turn } = session.state;
@@ -230,6 +256,25 @@ function restorePassNotice() {
 }
 function render() {
   const s = session.state;
+  const puzzle = activePuzzle();
+  const outcome = puzzle && puzzleOutcome(s, puzzle, session.undo.length);
+  const ended = finished();
+  if (puzzle && outcome === 'solved') {
+    const previous = puzzleProgress[puzzle.id];
+    if (
+      !previous ||
+      session.undo.length < previous.bestMoves ||
+      (!session.puzzleHinted && !previous.unassisted)
+    ) {
+      puzzleProgress = recordPuzzle(
+        puzzleProgress,
+        puzzle.id,
+        session.undo.length,
+        !!session.puzzleHinted,
+      );
+      if (!savePuzzleProgress(puzzleProgress)) storageAvailable = false;
+    }
+  }
   const opponent = opponentFor(session.opponent);
   names.coral = session.mode === 'solo' ? opponent.name : 'Coral';
   document.body.dataset.opponent =
@@ -243,8 +288,9 @@ function render() {
   $('#home-screen').hidden = screen !== 'home';
   $('#play-screen').hidden = screen !== 'play';
   document.body.classList.toggle('playing', screen === 'play');
+  document.body.classList.toggle('puzzling', screen === 'play' && !!puzzle);
   $('#continue-button').hidden = !hasGame;
-  $('#continue-label').textContent = s.result ? 'Review last match' : 'Continue match';
+  $('#continue-label').textContent = ended ? 'Review last match' : 'Continue match';
   if (screen === 'home') renderOpponents();
   $('#home-button').setAttribute(
     'aria-label',
@@ -252,8 +298,9 @@ function render() {
   );
   $<HTMLButtonElement>('#play-again').disabled = animating;
   const moves = legalMoves(s).filter((m) => m.from === selected);
-  $('#mode-label').textContent =
-    session.mode === 'solo'
+  $('#mode-label').textContent = puzzle
+    ? `PUZZLE ${puzzles.indexOf(puzzle) + 1} · ${puzzle.title.toUpperCase()}`
+    : session.mode === 'solo'
       ? `YOU + COMPUTER · ${session.difficulty.toUpperCase()}`
       : 'TWO PLAYERS · ONE BOARD';
   $('#coral-label').textContent =
@@ -280,7 +327,7 @@ function render() {
       `${nodeNames[n]}: ${owner ? names[owner] + ' pawn' : 'empty'}${moves.some((m) => m.to === n) ? ', legal destination' : ''}`,
     );
     button.setAttribute('aria-pressed', String(selected === n));
-    button.setAttribute('aria-disabled', String(!!s.result || !humanTurn || thinking || animating));
+    button.setAttribute('aria-disabled', String(ended || !humanTurn || thinking || animating));
   });
   $('#turn-dot').className = `turn-dot ${s.turn}`;
   let status = `${names[s.turn]} to move`;
@@ -304,11 +351,13 @@ function render() {
     instruction = `No legal moves. ${names[other(passedSide)]} moves again.`;
   }
   const resultPanel = $<HTMLDialogElement>('#result-panel');
-  if (!s.result && resultPanel.open) resultPanel.close();
-  $('.game').classList.toggle('finished', !!s.result);
-  $('#new-button').innerHTML = s.result
-    ? 'Play again <span aria-hidden="true">↻</span>'
-    : 'New match <span aria-hidden="true">↻</span>';
+  if (!ended && resultPanel.open) resultPanel.close();
+  $('.game').classList.toggle('finished', ended);
+  $('#new-button').innerHTML = puzzle
+    ? 'Retry puzzle ↻'
+    : s.result
+      ? 'Play again <span aria-hidden="true">↻</span>'
+      : 'New match <span aria-hidden="true">↻</span>';
   if (s.result) {
     const winner = 'winner' in s.result ? s.result.winner : null;
     status = winner
@@ -344,6 +393,37 @@ function render() {
       : winner
         ? `${opponent.name} won this round. ${opponent.tip}`
         : `Try a different route next time. ${opponent.tip}`;
+  }
+  $('#next-puzzle').hidden =
+    !puzzle || outcome !== 'solved' || puzzles.indexOf(puzzle) === puzzles.length - 1;
+  $('#puzzle-hint').hidden = !puzzle || ended;
+  $<HTMLButtonElement>('#puzzle-hint').disabled = thinking || animating;
+  $('#play-again').textContent = puzzle ? 'Retry puzzle ↻' : 'Play again ↻';
+  if (puzzle) {
+    $('#next-opponent').hidden = true;
+    $('#journey-result').hidden = !outcome;
+    $('#journey-result').textContent = outcome ? puzzle.explanation : '';
+    if (outcome) {
+      status = outcome === 'solved' ? 'Puzzle solved!' : 'Try another route';
+      instruction =
+        outcome === 'solved'
+          ? puzzle.explanation
+          : 'The goal was not reached. Retry with a different plan.';
+      $('#result-title').textContent = status;
+      $('#result-detail').textContent =
+        `${puzzle.title} · ${outcome === 'solved' ? 'Delivered all three' : 'Finish all deliveries'} within ${puzzle.moves} of your moves. ${session.puzzleHinted ? 'Hint used.' : 'No hint used.'}`;
+      $('#final-score').textContent =
+        `${session.undo.length} / ${puzzle.moves} moves · ${s.delivered.blue} / 3 delivered`;
+    } else {
+      const left = puzzle.moves - session.undo.length;
+      status = thinking
+        ? 'Coral is defending'
+        : `${puzzle.title} · ${left} ${left === 1 ? 'move' : 'moves'} left`;
+      instruction = `Deliver all remaining Blue pawns. Only your moves count.${session.puzzleHinted ? ' Hint used.' : ''}`;
+    }
+    $('#instruction').classList.toggle('puzzle-clue', !!session.puzzleHinted);
+  }
+  if (ended) {
     if (
       screen === 'play' &&
       !animating &&
@@ -354,10 +434,10 @@ function render() {
   }
   $('#status').textContent = status;
   $('#instruction').textContent = instruction;
-  $('#undo-button').hidden = !!s.result;
+  $('#undo-button').hidden = ended;
   $<HTMLButtonElement>('#play-again').disabled = animating;
   $<HTMLButtonElement>('#undo-button').disabled =
-    !!s.result || session.undo.length === 0 || thinking || animating;
+    ended || session.undo.length === 0 || thinking || animating;
   $('#move-count').textContent = `TURN ${s.turns + Number(!s.result)}`;
   $('#save-status').textContent = storageAvailable ? 'SAVED ON THIS DEVICE' : 'SAVING UNAVAILABLE';
 }
@@ -374,7 +454,7 @@ function scheduleComputer() {
     screen !== 'play' ||
     session.mode !== 'solo' ||
     session.state.turn !== 'coral' ||
-    session.state.result ||
+    finished() ||
     document.hidden ||
     document.querySelector('dialog[open]')
   )
@@ -394,13 +474,17 @@ function scheduleComputer() {
       };
       current.onerror = () => {
         cancelComputer();
-        const fallback = legalMoves(session.state)[0];
+        const puzzle = activePuzzle();
+        const fallback = puzzle
+          ? choosePuzzleReply(session.state, puzzle.moves - session.undo.length)
+          : legalMoves(session.state)[0];
         if (fallback) void commit(fallback, false);
       };
       current.postMessage({
         state: session.state,
         difficulty: session.difficulty,
         opponent: session.opponent,
+        puzzleMoves: activePuzzle() ? activePuzzle()!.moves - session.undo.length : undefined,
       });
     },
     Math.max(450, passUntil - performance.now()),
@@ -456,7 +540,11 @@ function showDelivery(side: Side) {
   }, 2000);
 }
 async function commit(move: Move, human: boolean, origin?: { x: number; y: number }) {
-  if (animating || !legalMoves(session.state).some((m) => m.from === move.from && m.to === move.to))
+  if (
+    animating ||
+    finished() ||
+    !legalMoves(session.state).some((m) => m.from === move.from && m.to === move.to)
+  )
     return;
   const previous = session.state,
     side = previous.turn;
@@ -536,9 +624,9 @@ async function commit(move: Move, human: boolean, origin?: { x: number; y: numbe
   }
   playSound(delivered);
   render();
-  const result = session.state.result;
+  const ended = finished();
   announce(
-    `${names[side]} ${delivered ? 'delivered a pawn' : `moved from ${nodeNames[move.from]} to ${nodeNames[move.to]}`}. ${result ? $('#status').textContent : `${names[session.state.turn]} to move.${session.state.turn === side ? ' The other player had no legal move and passed.' : ''}`}`,
+    `${names[side]} ${delivered ? 'delivered a pawn' : `moved from ${nodeNames[move.from]} to ${nodeNames[move.to]}`}. ${ended ? $('#status').textContent : `${names[session.state.turn]} to move.${session.state.turn === side ? ' The other player had no legal move and passed.' : ''}`}`,
   );
   scheduleComputer();
 }
@@ -547,7 +635,7 @@ const cancelDrag = enableDragging($('#board'), {
     screen === 'play' &&
     !thinking &&
     !animating &&
-    !session.state.result &&
+    !finished() &&
     !document.querySelector('dialog[open]') &&
     (session.mode === 'local' || session.state.turn === 'blue') &&
     session.state.board[n] === session.state.turn,
@@ -569,7 +657,7 @@ $('#board').addEventListener('click', (event) => {
     !button ||
     thinking ||
     animating ||
-    session.state.result ||
+    finished() ||
     (session.mode === 'solo' && session.state.turn !== 'blue')
   )
     return;
@@ -599,7 +687,7 @@ $('#board').addEventListener('keydown', (event) => {
   }
 });
 $('#undo-button').addEventListener('click', () => {
-  if (animating || thinking || session.state.result) return;
+  if (animating || thinking || finished()) return;
   const previous = session.undo.pop();
   if (!previous) return;
   cancelComputer();
@@ -626,10 +714,28 @@ function setScreen(next: 'home' | 'play') {
   cancelComputer();
   cancelDrag();
   if (next === 'home') releaseFocus();
+  if (next === 'home' && session.puzzleId) {
+    persist();
+    session = mainSession ?? {
+      state: initialState(),
+      mode: 'solo',
+      difficulty: 'standard',
+      undo: [],
+      starter: 'blue',
+      opponent: 'coral',
+      matchId: createMatchId(),
+    };
+    hasGame = !!mainSession;
+    clearDelivery();
+    selected = null;
+    lastMove = null;
+    restorePassNotice();
+  }
   screen = next;
   returnToPause = false;
   try {
     sessionStorage.setItem('dama-screen', screen);
+    sessionStorage.setItem('dama-active-puzzle', String(!!session.puzzleId));
   } catch {
     /* Navigation can remain in memory. */
   }
@@ -682,6 +788,8 @@ function renderOpponents() {
   $('#opponent-profile').innerHTML =
     `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws</small>`;
   $('#start-button').textContent = `Play ${o.name} →`;
+  $('#puzzles-button').textContent =
+    `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length}`;
 }
 $('#opponent-cards').addEventListener('click', (event) => {
   const card = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-rival]');
@@ -724,6 +832,10 @@ $('#help-button').addEventListener('click', () => openDialog('#help'));
 $('#settings-button').addEventListener('click', () => openDialog('#settings'));
 function requestNewMatch() {
   if (animating) return;
+  if (session.puzzleId) {
+    startPuzzle(session.puzzleId, true);
+    return;
+  }
   pendingStart = false;
   $('#restart-detail').textContent =
     'Start again with the same players and challenge setting. This replaces your unfinished match.';
@@ -733,14 +845,17 @@ function requestNewMatch() {
 }
 $('#new-button').addEventListener('click', requestNewMatch);
 $('#play-again').addEventListener('click', () => {
-  if (!animating) startNewMatch();
+  if (!animating) {
+    if (session.puzzleId) startPuzzle(session.puzzleId, true);
+    else startNewMatch();
+  }
 });
 document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
   dialog
     .querySelectorAll('.close')
     .forEach((button) => button.addEventListener('click', () => dialog.close()));
   dialog.addEventListener('close', () => {
-    if (dialog.id === 'result-panel' && session.state.result) resultDismissed = true;
+    if (dialog.id === 'result-panel' && finished()) resultDismissed = true;
     if (returnToPause && screen === 'play' && (dialog.id === 'settings' || dialog.id === 'help')) {
       returnToPause = false;
       openDialog('#pause');
@@ -777,6 +892,80 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
   announce('New match started.');
 }
 $('#confirm-new').addEventListener('click', () => startNewMatch(pendingStart));
+function renderPuzzles() {
+  $('#puzzle-list').innerHTML = puzzles
+    .map((p, index) => {
+      const completed = puzzleProgress[p.id];
+      const resume =
+        savedPuzzle?.puzzleId === p.id &&
+        !puzzleOutcome(savedPuzzle.state, p, savedPuzzle.undo.length);
+      const preview = `<svg viewBox="0 0 100 100" aria-hidden="true">${p.board.map((side, n) => `<circle cx="${16 + (n % 3) * 34}" cy="${16 + Math.floor(n / 3) * 34}" r="${side ? 8 : 3}" class="preview-${side ?? 'empty'}"/>`).join('')}</svg>`;
+      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>${p.theme} · Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'Continue your saved attempt →' : 'Try this puzzle →'}</small></span></button>`;
+    })
+    .join('');
+}
+function startPuzzle(id: string, retry = false) {
+  if (animating) return;
+  const puzzle = puzzleFor(id);
+  if (!puzzle) return;
+  cancelComputer();
+  cancelDrag();
+  clearDelivery();
+  if (!session.puzzleId) mainSession = hasGame ? session : null;
+  const resume =
+    !retry &&
+    savedPuzzle?.puzzleId === id &&
+    !puzzleOutcome(savedPuzzle.state, puzzle, savedPuzzle.undo.length);
+  session = resume
+    ? savedPuzzle!
+    : {
+        state: puzzleState(puzzle),
+        mode: 'solo',
+        difficulty: 'standard',
+        starter: 'blue',
+        undo: [],
+        opponent: 'coral',
+        matchId: createMatchId(),
+        puzzleId: id,
+        puzzleHinted: false,
+      };
+  hasGame = true;
+  selected = null;
+  lastMove = null;
+  resultDismissed = false;
+  restorePassNotice();
+  persist();
+  setScreen('play');
+  if ($<HTMLInputElement>('#immersive').checked) void enterFocus();
+  announce(`${puzzle.title}. Win within ${puzzle.moves} of your moves. Coral defends.`);
+}
+$('#puzzles-button').addEventListener('click', () => {
+  renderPuzzles();
+  openDialog('#puzzles-dialog');
+});
+$('#puzzle-list').addEventListener('click', (event) => {
+  const card = (event.target as HTMLElement).closest<HTMLElement>('[data-puzzle]');
+  if (card) startPuzzle(card.dataset.puzzle!);
+});
+$('#puzzle-hint').addEventListener('click', () => {
+  const p = activePuzzle();
+  if (!p || animating || thinking || finished()) return;
+  session.puzzleHinted = true;
+  const move = puzzleSolver().winningMoves(session.state, p.moves - session.undo.length)[0];
+  const puzzleMessage = move
+    ? `${p.hint} Try ${nodeNames[move.from]} → ${nodeNames[move.to]}.`
+    : 'This route no longer guarantees the goal. Undo or retry to find another way.';
+  $('#puzzle-hint-text').textContent = puzzleMessage;
+  persist();
+  openDialog('#puzzle-hint-dialog');
+  announce(puzzleMessage);
+});
+$('#next-puzzle').addEventListener('click', () => {
+  const p = activePuzzle();
+  const next = p && puzzles[puzzles.indexOf(p) + 1];
+  if (next) startPuzzle(next.id);
+});
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     cancelComputer();
@@ -789,7 +978,7 @@ if (hasGame) persist();
 render();
 if (restored)
   announce(
-    session.state.result
+    finished()
       ? `Saved match: ${$('#status').textContent}. Game over. Play again to start a new match.`
       : 'Your saved match is ready to continue.',
   );

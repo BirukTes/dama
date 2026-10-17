@@ -1715,3 +1715,128 @@ body.high-contrast[data-theme='dark'][data-opponent='guardian'] {
     min-height: 50px;
   }
 }
+.lobby-controls {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: 'setting puzzles' 'play play' 'friend friend';
+}
+.lobby-controls #difficulty-field {
+  grid-area: setting;
+  min-width: 0;
+}
+.lobby-controls #difficulty-select {
+  max-width: 100%;
+  width: 100%;
+}
+.lobby-controls #puzzles-button {
+  grid-area: puzzles;
+  font-size: 11px;
+  padding: 8px;
+}
+.lobby-controls #start-button {
+  grid-area: play;
+}
+.lobby-controls #local-button {
+  grid-area: friend;
+}
+#puzzles-dialog {
+  width: min(720px, calc(100% - 28px));
+}
+.puzzle-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.puzzle-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+.puzzle-card:hover {
+  background: var(--hover);
+}
+.puzzle-card svg {
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+}
+.puzzle-card strong {
+  font-size: 14px;
+}
+.puzzle-card small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.preview-blue {
+  fill: var(--blue);
+}
+.preview-coral {
+  fill: var(--coral);
+}
+.preview-empty {
+  fill: var(--path);
+}
+#puzzle-hint {
+  padding: 9px 12px;
+}
+.puzzling .turn-panel {
+  flex-wrap: wrap;
+}
+.puzzling .turn-panel > div {
+  flex: 1;
+  min-width: 100px;
+}
+body.puzzling #instruction {
+  display: block;
+  font-size: 11px;
+}
+body.puzzling .puzzle-clue {
+  color: var(--ink);
+}
+@media (max-width: 620px) {
+  .lobby-controls {
+    grid-template-areas: 'setting puzzles' 'play friend';
+  }
+  .puzzle-list {
+    grid-template-columns: 1fr;
+  }
+  body.puzzling .board-shell {
+    width: min(100%, calc(100dvh - 405px - var(--safe-top) - var(--safe-bottom)));
+  }
+  body.puzzling.immersive .board-shell {
+    width: min(100%, calc(100dvh - 365px - var(--safe-top) - var(--safe-bottom)));
+  }
+  body.puzzling #puzzle-hint {
+    font-size: 11px;
+  }
+}
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 620px) {
+  .lobby-controls {
+    grid-template-areas: 'setting puzzles' 'play friend';
+  }
+  .puzzling .turn-panel > div {
+    min-width: 100%;
+  }
+  body.puzzling #instruction {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+}
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 620px) {
+  body.puzzling #instruction {
+    display: none;
+  }
+  body.puzzling .turn-panel {
+    gap: 8px;
+  }
+  body.puzzling .turn-panel h2 {
+    font-size: 11px;
+  }
+}

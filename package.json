@@ -12,11 +12,13 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "analyze": "tsx src/analysis/analyze.ts",
+    "analyze:rivals": "tsx src/analysis/rivals.ts",
     "preview": "vite preview --host 0.0.0.0",
     "test:browser": "node tests/browser-check.mjs",
     "test:appearance": "node tests/appearance-browser.mjs",
     "test:journey": "node tests/journey-browser.mjs",
     "test:sound": "node tests/sound-browser.mjs",
+    "test:puzzles": "node tests/puzzles-browser.mjs",
     "test:production": "node tests/production-browser.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

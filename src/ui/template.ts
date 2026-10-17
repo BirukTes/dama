@@ -43,12 +43,13 @@ export const template = /* HTML */ `
         ></section>
         <div class="lobby-controls">
           <label class="field" id="difficulty-field">
-            Challenge
+            <span class="sr-only">Challenge setting</span>
             <select id="difficulty-select">
               <option value="gentle">Gentle</option>
               <option value="standard">Standard</option>
             </select>
           </label>
+          <button class="quiet" id="puzzles-button">Puzzles · 0 / 6</button>
           <button class="primary" id="start-button">Play Coral →</button>
           <button class="quiet" id="local-button">
             Play with a friend
@@ -136,6 +137,7 @@ export const template = /* HTML */ `
           <p id="instruction"></p>
         </div>
         <button class="quiet undo" id="undo-button">Undo</button>
+        <button class="quiet" id="puzzle-hint" hidden>Hint</button>
       </div>
       <div class="game-bottom">
         <span id="move-count"></span>
@@ -178,6 +180,7 @@ export const template = /* HTML */ `
     <p class="dialog-note" id="journey-result" hidden></p>
     <div class="dialog-actions">
       <button class="primary" id="next-opponent" hidden>Next challenge →</button>
+      <button class="primary" id="next-puzzle" hidden>Next puzzle →</button>
       <button class="primary" id="play-again" autofocus>Play again ↻</button>
       <button class="quiet go-home">Home</button>
     </div>
@@ -198,6 +201,27 @@ export const template = /* HTML */ `
     </div>
   </dialog>
   ${helpMarkup}
+  <dialog id="puzzles-dialog" aria-labelledby="puzzles-title">
+    <div class="dialog-top">
+      <p class="eyebrow">SIX WAYS TO THINK</p>
+      <button class="quiet close" aria-label="Close puzzles">Close ×</button>
+    </div>
+    <h2 id="puzzles-title">Small board. New challenge.</h2>
+    <p class="dialog-note">
+      Play Blue. Deliver all remaining pawns within the move limit. Only your moves count; Coral
+      defends. Puzzles save separately from your match. All six are free to try.
+    </p>
+    <div id="puzzle-list" class="puzzle-list"></div>
+  </dialog>
+  <dialog id="puzzle-hint-dialog" aria-labelledby="puzzle-hint-title">
+    <div class="dialog-top">
+      <p class="eyebrow">A SMALL NUDGE</p>
+      <button class="quiet close" aria-label="Close hint">Close ×</button>
+    </div>
+    <h2 id="puzzle-hint-title">Try this route.</h2>
+    <p class="dialog-note" id="puzzle-hint-text"></p>
+    <button class="primary close">Back to puzzle →</button>
+  </dialog>
   <dialog id="settings">
     <div class="dialog-top">
       <p class="eyebrow">MAKE YOURSELF AT HOME</p>
