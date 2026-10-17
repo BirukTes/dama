@@ -2,6 +2,7 @@ import { goals, key, type State } from '../game/rules';
 import type { Difficulty } from '../ai/search';
 import { isOpponent, type OpponentId } from '../game/opponents';
 import { puzzleFor } from '../game/puzzles';
+import { isMapId } from '../game/maps';
 export interface Session {
   state: State;
   mode: 'solo' | 'local';
@@ -17,6 +18,7 @@ const storageKey = 'dama-session-v1';
 export function validState(value: unknown): value is State {
   if (!value || typeof value !== 'object') return false;
   const s = value as State;
+  if (s.map !== undefined && !isMapId(s.map)) return false;
   if (
     !Array.isArray(s.board) ||
     s.board.length !== 9 ||
@@ -40,7 +42,12 @@ export function validState(value: unknown): value is State {
     s.history.length < 1 ||
     s.history.length > 102 ||
     !s.history.every(
-      (k) => typeof k === 'string' && /^[bc.]{9}:[0-3]:[0-3]:(blue|coral)$/.test(k),
+      (k) =>
+        typeof k === 'string' &&
+        /^[bc.]{9}:[0-3]:[0-3]:(blue|coral)$/.test(
+          s.map === 'crossroads' ? k.replace(/^crossroads\|/, '') : k,
+        ) &&
+        k.startsWith('crossroads|') === (s.map === 'crossroads'),
     ) ||
     s.history.at(-1) !== key(s)
   )
@@ -72,10 +79,13 @@ export function loadSession(key = storageKey): Session | null {
       (data.opponent !== undefined && !isOpponent(data.opponent)) ||
       (data.matchId !== undefined && typeof data.matchId !== 'string') ||
       (data.puzzleId !== undefined && (!puzzleFor(data.puzzleId) || data.mode !== 'solo')) ||
+      (data.puzzleId !== undefined && data.state.map === 'crossroads') ||
       (data.puzzleHinted !== undefined && typeof data.puzzleHinted !== 'boolean') ||
       !Array.isArray(data.undo) ||
       data.undo.length > 100 ||
-      !data.undo.every(validState)
+      !data.undo.every(
+        (s: unknown) => validState(s) && (s.map ?? 'classic') === (data.state.map ?? 'classic'),
+      )
     )
       return null;
     return data;

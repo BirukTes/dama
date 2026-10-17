@@ -1,3 +1,4 @@
+import { mapFor, type MapId } from './maps';
 export type Side = 'coral' | 'blue';
 export type Result = { winner: Side } | { draw: 'repetition' | 'blocked' | 'turn-limit' };
 export interface Move {
@@ -5,6 +6,7 @@ export interface Move {
   to: number;
 }
 export interface State {
+  map?: MapId;
   board: (Side | null)[];
   delivered: Record<Side, number>;
   turn: Side;
@@ -14,24 +16,13 @@ export interface State {
 }
 export const other = (side: Side): Side => (side === 'blue' ? 'coral' : 'blue');
 export const goals: Record<Side, number[]> = { blue: [0, 3, 6], coral: [2, 5, 8] };
-export const edges: [number, number][] = [
-  [0, 1],
-  [1, 2],
-  [2, 5],
-  [5, 8],
-  [8, 7],
-  [7, 6],
-  [6, 3],
-  [3, 0],
-  ...[0, 1, 2, 3, 5, 6, 7, 8].map((n) => [4, n] as [number, number]),
-];
-export const neighbours = Array.from({ length: 9 }, (_, n) =>
-  edges.flatMap(([a, b]) => (a === n ? [b] : b === n ? [a] : [])),
-);
+// Classic exports remain available for the original analysis and puzzle fixtures.
+export const { edges, neighbours } = mapFor('classic');
 export const key = (s: State): string =>
-  `${s.board.map((p) => (p === 'blue' ? 'b' : p === 'coral' ? 'c' : '.')).join('')}:${s.delivered.blue}:${s.delivered.coral}:${s.turn}`;
-export function initialState(turn: Side = 'blue'): State {
+  `${s.map === 'crossroads' ? 'crossroads|' : ''}${s.board.map((p) => (p === 'blue' ? 'b' : p === 'coral' ? 'c' : '.')).join('')}:${s.delivered.blue}:${s.delivered.coral}:${s.turn}`;
+export function initialState(turn: Side = 'blue', map: MapId = 'classic'): State {
   const s: State = {
+    ...(map === 'classic' ? {} : { map }),
     board: ['coral', null, 'blue', 'coral', null, 'blue', 'coral', null, 'blue'],
     delivered: { blue: 0, coral: 0 },
     turn,
@@ -46,7 +37,9 @@ export function legalMoves(s: State, side: Side = s.turn): Move[] {
   if (s.result) return [];
   return s.board.flatMap((p, from) =>
     p === side
-      ? neighbours[from].filter((to) => s.board[to] === null).map((to) => ({ from, to }))
+      ? mapFor(s.map)
+          .neighbours[from].filter((to) => s.board[to] === null)
+          .map((to) => ({ from, to }))
       : [],
   );
 }
@@ -71,6 +64,7 @@ export function applyMove(s: State, move: Move): State {
   if (goals[s.turn].includes(move.to)) delivered[s.turn]++;
   else board[move.to] = s.turn;
   let next: State = {
+    ...(s.map ? { map: s.map } : {}),
     board,
     delivered,
     turn: other(s.turn),

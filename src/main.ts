@@ -5,7 +5,8 @@ import '@fontsource/dm-sans/latin-700.css';
 import './style.css';
 import { initialState, legalMoves, applyMove, other, type Move, type Side } from './game/rules';
 import { loadSession, saveSession, type Session } from './persistence/save';
-import { template, points } from './ui/template';
+import { template, points, boardLines } from './ui/template';
+import { mapFor, isMapId, type MapId } from './game/maps';
 import { opponents, opponentFor, isOpponent, type OpponentId } from './game/opponents';
 import { loadProgress, saveProgress, recordResult, unlocked } from './persistence/progress';
 import { enableDragging } from './ui/drag';
@@ -54,6 +55,7 @@ session.matchId ??= createMatchId();
 let progress = loadProgress();
 let puzzleProgress = loadPuzzleProgress();
 let chosenOpponent: OpponentId = session.opponent;
+let renderedMap: MapId | null = null;
 let pendingStart: Session['mode'] | false = false;
 let rotationDismissed = false;
 let ownsFullscreen = false;
@@ -87,9 +89,11 @@ try {
 $('#app').innerHTML = template;
 
 $<HTMLSelectElement>('#difficulty-select').value = session.difficulty;
+$<HTMLSelectElement>('#map-select').value = session.state.map ?? 'classic';
 try {
   const choice = JSON.parse(localStorage.getItem('dama-home-choice-v1') ?? '{}');
   if (isOpponent(choice.opponent)) chosenOpponent = choice.opponent;
+  if (isMapId(choice.map)) $<HTMLSelectElement>('#map-select').value = choice.map;
   if (['gentle', 'standard'].includes(choice.difficulty))
     $<HTMLSelectElement>('#difficulty-select').value = choice.difficulty;
 } catch {
@@ -256,6 +260,21 @@ function restorePassNotice() {
 }
 function render() {
   const s = session.state;
+  const map = mapFor(s.map);
+  const practice = map.id === 'crossroads';
+  if (renderedMap !== map.id) {
+    $('#board svg').innerHTML = boardLines(map.id);
+    renderedMap = map.id;
+  }
+  $('#board-map-label').textContent = `${map.name}${practice ? ' · Practice' : ''}`;
+  $('#board').setAttribute(
+    'aria-label',
+    `${map.name} board. ${map.description} Drag a pawn, or tap it then a connected empty spot.`,
+  );
+  const helpMap =
+    screen === 'play' ? map : mapFor($<HTMLSelectElement>('#map-select').value as MapId);
+  $('#help-map-note').textContent =
+    `${helpMap.name}: ${helpMap.description} Three pawns, one connection per turn, first to deliver three wins.`;
   const puzzle = activePuzzle();
   const outcome = puzzle && puzzleOutcome(s, puzzle, session.undo.length);
   const ended = finished();
@@ -290,7 +309,11 @@ function render() {
   document.body.classList.toggle('playing', screen === 'play');
   document.body.classList.toggle('puzzling', screen === 'play' && !!puzzle);
   $('#continue-button').hidden = !hasGame;
-  $('#continue-label').textContent = ended ? 'Review last match' : 'Continue match';
+  $('#continue-label').textContent = ended
+    ? 'Review last match'
+    : practice
+      ? 'Continue Crossroads'
+      : 'Continue match';
   if (screen === 'home') renderOpponents();
   $('#home-button').setAttribute(
     'aria-label',
@@ -301,8 +324,8 @@ function render() {
   $('#mode-label').textContent = puzzle
     ? `PUZZLE ${puzzles.indexOf(puzzle) + 1} · ${puzzle.title.toUpperCase()}`
     : session.mode === 'solo'
-      ? `YOU + COMPUTER · ${session.difficulty.toUpperCase()}`
-      : 'TWO PLAYERS · ONE BOARD';
+      ? `${map.name.toUpperCase()} · ${practice ? 'PRACTICE' : session.difficulty.toUpperCase()}`
+      : `${map.name.toUpperCase()} · TWO PLAYERS`;
   $('#coral-label').textContent =
     session.mode === 'solo' ? `${opponent.symbol} ${opponent.name.toUpperCase()}` : 'CORAL';
   $('#blue-label').textContent = session.mode === 'solo' ? 'YOU · BLUE' : 'BLUE';
@@ -383,7 +406,7 @@ function render() {
       `${session.mode === 'solo' ? 'You' : 'Blue'} ${s.delivered.blue} / 3 · ${names.coral} ${s.delivered.coral} / 3`;
     const next = opponents[opponents.findIndex((o) => o.id === opponent.id) + 1];
     const won = session.mode === 'solo' && winner === 'blue';
-    $('#next-opponent').hidden = !won || !next;
+    $('#next-opponent').hidden = !won || !next || practice;
     $('#next-opponent').textContent = next ? `Meet ${next.name} →` : 'Next challenge →';
     $('#journey-result').hidden = session.mode !== 'solo';
     $('#journey-result').textContent = won
@@ -393,6 +416,9 @@ function render() {
       : winner
         ? `${opponent.name} won this round. ${opponent.tip}`
         : `Try a different route next time. ${opponent.tip}`;
+    if (practice)
+      $('#journey-result').textContent =
+        'Crossroads practice. Your Classic rival records and unlocks are unchanged. Try a different route or rematch.';
   }
   $('#next-puzzle').hidden =
     !puzzle || outcome !== 'solved' || puzzles.indexOf(puzzle) === puzzles.length - 1;
@@ -753,6 +779,7 @@ function saveHomeChoice() {
       'dama-home-choice-v1',
       JSON.stringify({
         opponent: chosenOpponent,
+        map: $<HTMLSelectElement>('#map-select').value,
         difficulty: $<HTMLSelectElement>('#difficulty-select').value,
       }),
     );
@@ -765,28 +792,32 @@ function requestHomeMatch(mode: Session['mode']) {
   if (hasGame && !session.state.result && session.state.turns > 0) {
     pendingStart = mode;
     $('#restart-detail').textContent =
-      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} will replace your unfinished match. Your rival progress is kept.`;
+      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} on ${mapFor($<HTMLSelectElement>('#map-select').value as MapId).name} will replace your unfinished match. Your rival progress is kept.`;
     $('#confirm-new').textContent = 'Replace match & play';
     openDialog('#restart');
   } else startNewMatch(mode);
 }
 function renderOpponents() {
-  if (!unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
+  const map = mapFor($<HTMLSelectElement>('#map-select').value as MapId);
+  const practice = map.id === 'crossroads';
+  $<HTMLSelectElement>('#map-select').title = map.description;
+  if (!practice && !unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
-  $('#journey-progress').textContent =
-    `${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
+  $('#journey-progress').textContent = practice
+    ? 'Crossroads · Practice board · All rivals available. Classic progress is kept.'
+    : `${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
   $('#opponent-cards').innerHTML = opponents
     .map((o, index) => {
-      const available = unlocked(progress, o.id),
+      const available = practice || unlocked(progress, o.id),
         wins = progress.wins[o.id];
       return `<button class="opponent-card" data-rival="${o.id}" aria-pressed="${chosenOpponent === o.id}" ${available ? '' : 'disabled'}>
       <span class="opponent-symbol rival-${o.id}" aria-hidden="true">${o.symbol}</span><strong>${o.name}</strong><small>${o.level}</small>
-      <span class="rival-progress">${wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Ready to challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
+      <span class="rival-progress">${practice ? 'Practice match' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Ready to challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
     })
     .join('');
   const o = opponentFor(chosenOpponent);
   $('#opponent-profile').innerHTML =
-    `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws</small>`;
+    `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${practice ? map.description : o.description}</p><small>${practice ? 'Practice · Classic records are kept separately.' : `${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws`}</small>`;
   $('#start-button').textContent = `Play ${o.name} →`;
   $('#puzzles-button').textContent =
     `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length}`;
@@ -807,6 +838,10 @@ $('#next-opponent').addEventListener('click', () => {
   setScreen('home');
 });
 $('#difficulty-select').addEventListener('change', saveHomeChoice);
+$('#map-select').addEventListener('change', () => {
+  render();
+  saveHomeChoice();
+});
 $('#local-button').addEventListener('click', () => requestHomeMatch('local'));
 $('#start-button').addEventListener('click', () => requestHomeMatch('solo'));
 $('#continue-button').addEventListener('click', () => {
@@ -869,7 +904,10 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
   clearDelivery();
   const starter = fresh ? 'blue' : other(session.starter);
   session = {
-    state: initialState(starter),
+    state: initialState(
+      starter,
+      fresh ? ($<HTMLSelectElement>('#map-select').value as MapId) : session.state.map,
+    ),
     starter,
     mode: fresh || session.mode,
     difficulty: fresh

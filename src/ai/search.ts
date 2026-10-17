@@ -6,17 +6,17 @@ import {
   type State,
   type Move,
   goals,
-  neighbours,
 } from '../game/rules';
+import { mapFor, type MapId } from '../game/maps';
 import type { OpponentId } from '../game/opponents';
 export type Difficulty = 'gentle' | 'standard';
-const distance = (start: number, side: Side): number => {
+const distance = (start: number, side: Side, map: MapId): number => {
   let frontier = [start];
   const visited = new Set(frontier);
   for (let d = 0; frontier.length; d++) {
     if (frontier.some((n) => goals[side].includes(n))) return d;
     frontier = frontier
-      .flatMap((n) => neighbours[n])
+      .flatMap((n) => mapFor(map).neighbours[n])
       .filter((n) => {
         if (visited.has(n)) return false;
         visited.add(n);
@@ -25,10 +25,11 @@ const distance = (start: number, side: Side): number => {
   }
   return 9;
 };
-const distances = {
-  blue: Array.from({ length: 9 }, (_, n) => distance(n, 'blue')),
-  coral: Array.from({ length: 9 }, (_, n) => distance(n, 'coral')),
-};
+const distancesFor = (map: MapId) => ({
+  blue: Array.from({ length: 9 }, (_, n) => distance(n, 'blue', map)),
+  coral: Array.from({ length: 9 }, (_, n) => distance(n, 'coral', map)),
+});
+const distances = { classic: distancesFor('classic'), crossroads: distancesFor('crossroads') };
 function evaluate(s: State, side: Side, opponent: OpponentId): number {
   if (s.result)
     return 'winner' in s.result
@@ -43,7 +44,8 @@ function evaluate(s: State, side: Side, opponent: OpponentId): number {
     return (
       s.delivered[who] * (runner ? 160 : 100) -
       s.board.reduce(
-        (sum, p, n) => sum + (p === who ? distances[who][n] * (runner ? 24 : 12) : 0),
+        (sum, p, n) =>
+          sum + (p === who ? distances[s.map ?? 'classic'][who][n] * (runner ? 24 : 12) : 0),
         0,
       ) +
       moves.length * (opponent === 'guardian' ? 9 : 2) +

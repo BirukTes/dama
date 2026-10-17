@@ -1,7 +1,11 @@
 import { initialState, key, legalMoves, applyMove, type State } from '../game/rules';
+import { isMapId } from '../game/maps';
+declare const process: { argv: string[] };
+const map = process.argv[2] ?? 'classic';
+if (!isMapId(map)) throw new Error('Choose classic or crossroads.');
 // Enumerate baseline position transitions; discard repetition and turn-limit history.
 // Retrograde results below apply to the baseline with cycles treated as draws.
-const queue: State[] = [initialState('blue'), initialState('coral')];
+const queue: State[] = [initialState('blue', map), initialState('coral', map)];
 const seen = new Set(queue.map(key));
 let wins = 0,
   passes = 0,
@@ -69,13 +73,14 @@ for (let i = 0; i < resolved.length; i++) {
 console.log(
   JSON.stringify(
     {
+      map,
       reachableBaselinePositions: seen.size,
       winningPositions: wins,
       blockedDrawPositions: blocked,
       passTransitions: passes,
       maxLegalMoves: maxBranching,
-      baselineBlueStarts: outcome.get(key(initialState('blue'))) ?? 'draw',
-      baselineCoralStarts: outcome.get(key(initialState('coral'))) ?? 'draw',
+      baselineBlueStarts: outcome.get(key(initialState('blue', map))) ?? 'draw',
+      baselineCoralStarts: outcome.get(key(initialState('coral', map))) ?? 'draw',
       baselineDrawPositions: seen.size - outcome.size,
       scope:
         'Finite baseline graph with automatic passes and indefinite cycles treated as draws. Threefold-repetition history and the 100-turn cap are excluded; these outcomes do not establish the final ruleset balance or human match quality.',

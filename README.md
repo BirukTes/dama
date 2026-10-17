@@ -23,6 +23,7 @@ npm.cmd test
 npm.cmd run build
 npm.cmd run analyze
 npm.cmd run analyze:rivals
+npm.cmd run analyze -- crossroads
 ```
 
 With the development server running:
@@ -33,6 +34,7 @@ npm.cmd run test:appearance
 npm.cmd run test:journey
 npm.cmd run test:sound
 npm.cmd run test:puzzles
+npm.cmd run test:maps
 ```
 
 Browser checks use installed Microsoft Edge. They cover complete matches, computer replies, undo, saved sessions, pause/navigation, keyboard controls, themes, scoring animations, reduced motion, portrait/landscape layouts, mouse/touch dragging, rival unlocks, and result deduplication. Screenshots go into the ignored `.inspection` directory. Desktop emulation does not replace testing on physical phones.
@@ -50,6 +52,12 @@ The prototype supports computer matches and two-player practice on one device. P
 Solo play follows a three-rival journey: Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Win against each rival to unlock the next; either challenge setting counts. Rival profiles show playing styles and local win/loss/draw records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
 
 All rivals now take immediate wins and avoid an immediate losing reply when possible, including on Gentle. Completed iterative search depths share a 24,000-node decision budget; equivalent moves can vary and repeated routes are discouraged when viable. Guardian values both sides' deliveries equally rather than treating an even score as a reason to settle for a draw. These are heuristic styles; human difficulty and phone performance still need feedback.
+
+## Board maps
+
+Home's board selector offers **Classic** and **Crossroads**. Classic retains all 16 original connections. Crossroads uses 12 horizontal/vertical connections and removes the four centre-to-corner diagonals. Starting pawns, goals, turn rules, delivery and draw rules stay the same. Both computer and local play support Crossroads; the selected map stays with the match through undo, rematch and reload. Older saves load as Classic.
+
+Crossroads is a practice board with all three rivals available. It does not change Classic rival statistics or unlocks. The six authored puzzles remain on Classic and still save separately. See [the Crossroads delivery plan and analysis](docs/CROSSROADS.md) for scope and playtesting limits.
 
 ## Puzzles
 

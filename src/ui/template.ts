@@ -1,9 +1,16 @@
-import { edges } from '../game/rules';
+import { mapFor, type MapId } from '../game/maps';
 import { helpMarkup } from './help';
 export const points = Array.from({ length: 9 }, (_, n) => [
   80 + (n % 3) * 170,
   80 + Math.floor(n / 3) * 170,
 ]);
+export const boardLines = (map: MapId = 'classic') =>
+  mapFor(map)
+    .edges.map(
+      ([a, b]) =>
+        `<line x1="${points[a][0]}" y1="${points[a][1]}" x2="${points[b][0]}" y2="${points[b][1]}"/>`,
+    )
+    .join('');
 
 export const template = /* HTML */ `
   <header class="masthead">
@@ -42,6 +49,13 @@ export const template = /* HTML */ `
           aria-atomic="true"
         ></section>
         <div class="lobby-controls">
+          <label class="field" id="map-field">
+            <span class="sr-only">Board map</span>
+            <select id="map-select">
+              <option value="classic">Classic</option>
+              <option value="crossroads">Crossroads</option>
+            </select>
+          </label>
           <label class="field" id="difficulty-field">
             <span class="sr-only">Challenge setting</span>
             <select id="difficulty-select">
@@ -112,6 +126,7 @@ export const template = /* HTML */ `
       <p class="pass-notice" id="pass-notice" hidden></p>
       <p class="delivery-notice" id="delivery-notice" hidden></p>
       <div class="board-shell">
+        <span class="board-map-label" id="board-map-label">Classic</span>
         <div class="goal-edge coral-edge" aria-hidden="true"></div>
         <div class="goal-edge blue-edge" aria-hidden="true"></div>
         <div
@@ -121,7 +136,7 @@ export const template = /* HTML */ `
           aria-label="Board. Drag your pawn to a connected empty spot, or tap a pawn then its destination."
         >
           <svg viewBox="0 0 500 500" preserveAspectRatio="none" aria-hidden="true">
-            ${edges.map(([a, b]) => `<line x1="${points[a][0]}" y1="${points[a][1]}" x2="${points[b][0]}" y2="${points[b][1]}"/>`).join('')}
+            ${boardLines()}
           </svg>
           ${points.map(([x, y], n) => `<button class="node" data-node="${n}" style="left:${x / 5}%;top:${y / 5}%"><span class="piece" aria-hidden="true"></span></button>`).join('')}
         </div>

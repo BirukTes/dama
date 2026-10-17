@@ -26,14 +26,29 @@ try {
     () => JSON.parse(localStorage.getItem('dama-session-v1')).state.turns >= 2,
   );
   await page.waitForFunction(() => !document.querySelector('#undo-button').disabled);
-  const before = await page.evaluate(
-    () => JSON.parse(localStorage.getItem('dama-session-v1')).state,
-  );
+  let before = await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state);
   await page.reload();
   assert.deepEqual(
     await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state),
     before,
   );
+  await page.locator('#home-button').click();
+  await page.locator('#map-select').selectOption('crossroads');
+  await page.locator('#start-button').click();
+  await page.locator('#confirm-new').click();
+  assert.equal(await page.locator('#board line').count(), 12);
+  await page.locator('[data-node="2"]').click();
+  await page.locator('[data-node="1"]').click();
+  await page.waitForFunction(
+    () =>
+      JSON.parse(localStorage.getItem('dama-session-v1')).state.turns >= 2 &&
+      !document.querySelector('.traveller'),
+  );
+  assert.equal(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state.map),
+    'crossroads',
+  );
+  before = await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state);
   await page.locator('#pause-button').click();
   assert.equal(await page.locator('#pause[open]').count(), 1);
   await page.locator('#pause .primary').click();
@@ -73,6 +88,7 @@ try {
           'production Home',
           'source link',
           'built computer worker',
+          'Crossroads graph and bundled rival worker',
           'puzzle completion and bundled defence worker',
           'puzzle play preserves the regular match',
           'saved reload',
