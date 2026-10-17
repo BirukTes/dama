@@ -116,6 +116,30 @@ describe('opponent journey', () => {
   });
 });
 describe('rival decisions', () => {
+  it('takes wins and stops an immediate losing reply even on Gentle', () => {
+    const state = {
+      ...initialState('coral'),
+      board: [null, 'blue', null, 'coral', null, null, null, null, null] as State['board'],
+      delivered: { blue: 2, coral: 2 },
+    };
+    state.history = [key(state)];
+    for (const { id } of opponents)
+      for (const difficulty of ['gentle', 'standard'] as const)
+        expect(chooseMove(state, difficulty, () => 0.99, id)).toEqual({ from: 3, to: 0 });
+  });
+  it('varies equally winning finishes without making illegal moves', () => {
+    const state = {
+      ...initialState('coral'),
+      board: [null, 'blue', null, null, 'coral', null, null, null, null] as State['board'],
+      delivered: { blue: 2, coral: 2 },
+    };
+    state.history = [key(state)];
+    const choices = [0, 0.3, 0.6, 0.99].map((r) =>
+      chooseMove(state, 'standard', () => r, 'guardian'),
+    );
+    for (const choice of choices) expect(legalMoves(state)).toContainEqual(choice);
+    expect(new Set(choices.map((m) => `${m?.from}-${m?.to}`)).size).toBeGreaterThan(1);
+  });
   it('all rivals return legal moves and recognise an immediate win', () => {
     const win: State = {
       board: [null, 'blue', null, null, 'coral', null, null, null, null],
