@@ -95,7 +95,7 @@ try {
   // Home is the selector; replacing a live match needs one explicit confirmation.
   await page.locator('#home-button').click();
   const unfinished = await saved();
-  await page.locator('#difficulty-select').selectOption('gentle');
+  await page.locator('label:has(#difficulty-gentle)').click();
   await page.locator('#start-button').click();
   assert.equal(await page.locator('#restart[open]').count(), 1);
   assert.deepEqual(await saved(), unfinished);
@@ -107,7 +107,7 @@ try {
   assert.equal((await saved()).state.turns, 0);
   await page.locator('#home-button').click();
   await page.reload();
-  assert.equal(await page.locator('#difficulty-select').inputValue(), 'gentle');
+  assert.equal(await page.locator('#difficulty-gentle').isChecked(), true);
   await page.locator('#start-button').click();
   assert.equal(await page.locator('dialog[open]').count(), 0);
   assert.equal((await saved()).mode, 'solo');

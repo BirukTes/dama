@@ -33,7 +33,7 @@ try {
     before,
   );
   await page.locator('#home-button').click();
-  await page.locator('#map-select').selectOption('crossroads');
+  await page.locator('label:has(#map-crossroads)').click();
   await page.locator('#start-button').click();
   await page.locator('#confirm-new').click();
   assert.equal(await page.locator('#board line').count(), 12);

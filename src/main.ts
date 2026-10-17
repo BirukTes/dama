@@ -17,6 +17,9 @@ import { loadPuzzleProgress, recordPuzzle, savePuzzleProgress } from './persiste
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string): T =>
   document.querySelector<T>(selector)!;
+const selectedMap = () => $<HTMLInputElement>('input[name="board-map"]:checked').value as MapId;
+const selectedDifficulty = () =>
+  $<HTMLInputElement>('input[name="challenge"]:checked').value as Session['difficulty'];
 const names: Record<Side, string> = { blue: 'Blue', coral: 'Coral' };
 const nodeNames = [
   'top left',
@@ -88,14 +91,14 @@ try {
 }
 $('#app').innerHTML = template;
 
-$<HTMLSelectElement>('#difficulty-select').value = session.difficulty;
-$<HTMLSelectElement>('#map-select').value = session.state.map ?? 'classic';
+$<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
+$<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;
 try {
   const choice = JSON.parse(localStorage.getItem('dama-home-choice-v1') ?? '{}');
   if (isOpponent(choice.opponent)) chosenOpponent = choice.opponent;
-  if (isMapId(choice.map)) $<HTMLSelectElement>('#map-select').value = choice.map;
+  if (isMapId(choice.map)) $<HTMLInputElement>(`#map-${choice.map}`).checked = true;
   if (['gentle', 'standard'].includes(choice.difficulty))
-    $<HTMLSelectElement>('#difficulty-select').value = choice.difficulty;
+    $<HTMLInputElement>(`#difficulty-${choice.difficulty}`).checked = true;
 } catch {
   /* Choosing a match does not require storage. */
 }
@@ -271,8 +274,7 @@ function render() {
     'aria-label',
     `${map.name} board. ${map.description} Drag a pawn, or tap it then a connected empty spot.`,
   );
-  const helpMap =
-    screen === 'play' ? map : mapFor($<HTMLSelectElement>('#map-select').value as MapId);
+  const helpMap = screen === 'play' ? map : mapFor(selectedMap());
   $('#help-map-note').textContent =
     `${helpMap.name}: ${helpMap.description} Three pawns, one connection per turn, first to deliver three wins.`;
   const puzzle = activePuzzle();
@@ -779,8 +781,8 @@ function saveHomeChoice() {
       'dama-home-choice-v1',
       JSON.stringify({
         opponent: chosenOpponent,
-        map: $<HTMLSelectElement>('#map-select').value,
-        difficulty: $<HTMLSelectElement>('#difficulty-select').value,
+        map: selectedMap(),
+        difficulty: selectedDifficulty(),
       }),
     );
   } catch {
@@ -792,15 +794,15 @@ function requestHomeMatch(mode: Session['mode']) {
   if (hasGame && !session.state.result && session.state.turns > 0) {
     pendingStart = mode;
     $('#restart-detail').textContent =
-      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} on ${mapFor($<HTMLSelectElement>('#map-select').value as MapId).name} will replace your unfinished match. Your rival progress is kept.`;
+      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} on ${mapFor(selectedMap()).name} will replace your unfinished match. Your rival progress is kept.`;
     $('#confirm-new').textContent = 'Replace match & play';
     openDialog('#restart');
   } else startNewMatch(mode);
 }
 function renderOpponents() {
-  const map = mapFor($<HTMLSelectElement>('#map-select').value as MapId);
+  const map = mapFor(selectedMap());
   const practice = map.id === 'crossroads';
-  $<HTMLSelectElement>('#map-select').title = map.description;
+  $('#map-select').title = map.description;
   if (!practice && !unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
   $('#journey-progress').textContent = practice
@@ -904,15 +906,10 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
   clearDelivery();
   const starter = fresh ? 'blue' : other(session.starter);
   session = {
-    state: initialState(
-      starter,
-      fresh ? ($<HTMLSelectElement>('#map-select').value as MapId) : session.state.map,
-    ),
+    state: initialState(starter, fresh ? selectedMap() : session.state.map),
     starter,
     mode: fresh || session.mode,
-    difficulty: fresh
-      ? ($<HTMLSelectElement>('#difficulty-select').value as Session['difficulty'])
-      : session.difficulty,
+    difficulty: fresh ? selectedDifficulty() : session.difficulty,
     undo: [],
     opponent: fresh ? chosenOpponent : session.opponent,
     matchId: createMatchId(),

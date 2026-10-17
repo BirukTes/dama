@@ -49,20 +49,61 @@ export const template = /* HTML */ `
           aria-atomic="true"
         ></section>
         <div class="lobby-controls">
-          <label class="field" id="map-field">
-            <span class="sr-only">Board map</span>
-            <select id="map-select">
-              <option value="classic">Classic</option>
-              <option value="crossroads">Crossroads</option>
-            </select>
-          </label>
-          <label class="field" id="difficulty-field">
-            <span class="sr-only">Challenge setting</span>
-            <select id="difficulty-select">
-              <option value="gentle">Gentle</option>
-              <option value="standard">Standard</option>
-            </select>
-          </label>
+          <div class="field" id="map-field">
+            <div class="view-switch" id="map-select" role="radiogroup" aria-label="Board map">
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="board-map"
+                  id="map-classic"
+                  value="classic"
+                  checked
+                />
+                <span>Classic</span>
+              </label>
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="board-map"
+                  id="map-crossroads"
+                  value="crossroads"
+                />
+                <span>Crossroads</span>
+              </label>
+            </div>
+          </div>
+          <div class="field" id="difficulty-field">
+            <div
+              class="view-switch"
+              id="difficulty-select"
+              role="radiogroup"
+              aria-label="Challenge setting"
+            >
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="challenge"
+                  id="difficulty-gentle"
+                  value="gentle"
+                />
+                <span>Gentle</span>
+              </label>
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="challenge"
+                  id="difficulty-standard"
+                  value="standard"
+                  checked
+                />
+                <span>Standard</span>
+              </label>
+            </div>
+          </div>
           <button class="quiet" id="puzzles-button">Puzzles · 0 / 6</button>
           <button class="primary" id="start-button">Play Coral →</button>
           <button class="quiet" id="local-button">

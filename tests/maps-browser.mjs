@@ -26,8 +26,19 @@ try {
   });
   await page.goto('http://localhost:5173');
   assert.equal(await page.locator('[data-rival="guardian"]').isDisabled(), true);
-  await page.locator('#map-select').selectOption('crossroads');
+  await page.locator('label:has(#map-crossroads)').click();
   assert.equal(await page.locator('[data-rival="guardian"]').isDisabled(), false);
+  await page.locator('#map-crossroads').focus();
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await page.locator('#map-classic').isChecked(), true);
+  assert.equal(await page.locator('[data-rival="guardian"]').isDisabled(), true);
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('#map-crossroads').isChecked(), true);
+  await page.locator('#difficulty-standard').focus();
+  await page.keyboard.press('ArrowLeft');
+  assert.equal(await page.locator('#difficulty-gentle').isChecked(), true);
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('#difficulty-standard').isChecked(), true);
   await page.locator('[data-rival="guardian"]').click();
   await page.locator('#start-button').click();
   assert.equal(await page.locator('#board line').count(), 12);
@@ -44,6 +55,7 @@ try {
   const cross = await saved();
   assert.equal(cross.state.map, 'crossroads');
   await page.reload();
+  assert.equal(await page.locator('#map-crossroads').isChecked(), true);
   assert.deepEqual((await saved()).state, cross.state);
   assert.equal(await page.locator('#board line').count(), 12);
   await page.locator('#new-button').click();
@@ -78,7 +90,7 @@ try {
   assert.match(await page.locator('#board-map-label').textContent(), /Classic/);
   await page.locator('#home-button').click();
   assert.deepEqual((await saved()).state, unfinished.state);
-  await page.locator('#map-select').selectOption('classic');
+  await page.locator('label:has(#map-classic)').click();
   assert.equal(await page.locator('[data-rival="guardian"]').isDisabled(), true);
   await page.locator('#continue-button').click();
   assert.equal(await page.locator('#board line').count(), 12);
@@ -87,7 +99,7 @@ try {
   if (await page.locator('#restart[open]').count()) await page.locator('#confirm-new').click();
   assert.equal(await page.locator('#board line').count(), 16);
   await page.locator('#home-button').click();
-  await page.locator('#map-select').selectOption('crossroads');
+  await page.locator('label:has(#map-crossroads)').click();
   await page.locator('#local-button').click();
   if (await page.locator('#restart[open]').count()) await page.locator('#confirm-new').click();
   await page.setViewportSize({ width: 844, height: 390 });
