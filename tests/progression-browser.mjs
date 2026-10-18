@@ -88,7 +88,7 @@ try {
           'true',
         );
       } else {
-        assert.match(await page.locator('#journey-result').textContent(), /journey complete/);
+        assert.match(await page.locator('#journey-result').textContent(), /journeys? complete/);
         if (id !== 'islands') {
           assert.match(await page.locator('#next-opponent').textContent(), /Explore/);
           await page.locator('#next-opponent').click();
@@ -102,6 +102,11 @@ try {
     (keys) => keys.map((k) => localStorage.getItem(k)),
     ids.map(key),
   );
+  await finish('islands', 'guardian');
+  await page.locator('#practice-rival').click();
+  assert.equal(await page.locator('#track-free-play').isChecked(), true);
+  assert.equal(await page.locator('#map-islands').isChecked(), true);
+  assert.equal(await page.locator('[data-rival="guardian"]').getAttribute('aria-pressed'), 'true');
   await page.locator('label:has(#track-free-play)').click();
   for (const rival of ['coral', 'runner', 'guardian'])
     assert.equal(await page.locator(`[data-rival="${rival}"]`).isDisabled(), false);

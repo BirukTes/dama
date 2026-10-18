@@ -8,9 +8,23 @@ import {
   recordResult,
   unlocked,
   isJourney,
+  nextChallenge,
 } from '../src/persistence/progress';
 import { loadSession, saveSession, type Session } from '../src/persistence/save';
 afterEach(() => vi.unstubAllGlobals());
+it('chooses unbeaten rivals before other maps and finishes without a circular next goal', () => {
+  const all = Object.fromEntries(Object.keys(maps).map((id) => [id, emptyProgress()])) as Record<
+    keyof typeof maps,
+    ReturnType<typeof emptyProgress>
+  >;
+  expect(nextChallenge(all, 'islands')).toEqual({ map: 'islands', opponent: 'coral' });
+  all.islands.wins.coral = 1;
+  expect(nextChallenge(all, 'islands')).toEqual({ map: 'islands', opponent: 'runner' });
+  for (const p of Object.values(all)) p.wins = { coral: 1, runner: 1, guardian: 1 };
+  expect(nextChallenge(all, 'islands')).toBeNull();
+  all.crossroads.wins.guardian = 0;
+  expect(nextChallenge(all, 'islands')).toEqual({ map: 'crossroads', opponent: 'guardian' });
+});
 function storage() {
   const data = new Map<string, string>();
   vi.stubGlobal('localStorage', {

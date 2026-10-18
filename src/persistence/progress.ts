@@ -1,6 +1,6 @@
 import { opponents, type OpponentId } from '../game/opponents';
 import type { Session } from './save';
-import type { MapId } from '../game/maps';
+import { maps, type MapId } from '../game/maps';
 
 const storageKey = (map: MapId) =>
   map === 'classic' ? 'dama-progress-v1' : `dama-progress-${map}-v1`;
@@ -10,6 +10,16 @@ export const isJourney = (s: Session) =>
   !s.puzzleId &&
   (s.track === 'journey' || (s.track === undefined && (s.state.map ?? 'classic') === 'classic'));
 export const allowsUndo = (s: Session) => !isJourney(s);
+export function nextChallenge(journeys: Record<MapId, Progress>, preferred: MapId) {
+  const order = [maps[preferred], ...Object.values(maps).filter((m) => m.id !== preferred)];
+  for (const map of order) {
+    const rival = opponents.find(
+      (o) => journeys[map.id].wins[o.id] === 0 && unlocked(journeys[map.id], o.id),
+    );
+    if (rival) return { map: map.id, opponent: rival.id };
+  }
+  return null;
+}
 
 export interface Progress {
   wins: Record<OpponentId, number>;

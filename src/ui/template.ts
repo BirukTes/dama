@@ -277,6 +277,7 @@ export const template = /* HTML */ `
       <button class="primary" id="next-opponent" hidden>Next challenge →</button>
       <button class="primary" id="next-puzzle" hidden>Next puzzle →</button>
       <button class="primary" id="play-again" autofocus>Play again ↻</button>
+      <button class="quiet" id="practice-rival" hidden>Practice this rival · with undo</button>
       <button class="quiet go-home">Home</button>
     </div>
   </dialog>

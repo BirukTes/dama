@@ -15,6 +15,7 @@ import {
   unlocked,
   isJourney,
   allowsUndo,
+  nextChallenge,
 } from './persistence/progress';
 import { enableDragging } from './ui/drag';
 import { initTutorial } from './ui/tutorial';
@@ -428,11 +429,10 @@ function render() {
       : `${instruction} This match is finished.`;
     $('#final-score').textContent =
       `${session.mode === 'solo' ? 'You' : 'Blue'} ${s.delivered.blue} / 3 · ${names.coral} ${s.delivered.coral} / 3`;
-    const next = opponents[opponents.findIndex((o) => o.id === opponent.id) + 1];
+    const challenge = nextChallenge(journeys, map.id);
+    const next = challenge?.map === map.id ? opponentFor(challenge.opponent) : undefined;
     const won = session.mode === 'solo' && winner === 'blue';
-    const nextMap = Object.values(maps).find(
-      (m) => m.id !== map.id && journeys[m.id].wins.guardian === 0,
-    );
+    const nextMap = challenge && challenge.map !== map.id ? mapFor(challenge.map) : undefined;
     $('#next-opponent').hidden = !won || practice || (!next && !nextMap);
     $('#next-opponent').textContent = next
       ? `Meet ${next.name} →`
@@ -441,7 +441,9 @@ function render() {
     $('#journey-result').textContent = won
       ? next
         ? `You beat ${opponent.name}! ${next.name} is ready: ${next.description}`
-        : `${map.name} journey complete! Try another map or replay a favourite.`
+        : challenge
+          ? `${map.name} journey complete! Next: ${mapFor(challenge.map).name} · ${opponentFor(challenge.opponent).name}.`
+          : 'All six journeys complete! You beat every rival on every map. Replay a favourite or try the puzzle packs.'
       : winner
         ? `${opponent.name} won this round. ${opponent.tip}`
         : `Try a different route next time. ${opponent.tip}`;
@@ -454,6 +456,10 @@ function render() {
   $('#puzzle-hint').hidden = !puzzle || ended;
   $<HTMLButtonElement>('#puzzle-hint').disabled = thinking || animating;
   $('#play-again').textContent = puzzle ? 'Retry puzzle ↻' : 'Play again ↻';
+  $('#practice-rival').hidden = !isJourney(session) || !ended;
+  if (isJourney(session))
+    $('#play-again').textContent =
+      `${s.result && 'winner' in s.result && s.result.winner === 'blue' ? 'Rematch' : 'Retry'} ${opponent.name} ↻`;
   if (puzzle) {
     $('#next-opponent').hidden = true;
     $('#journey-result').hidden = !outcome;
@@ -866,16 +872,17 @@ function renderOpponents() {
 
   if (!practice && !unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
+  const goal = nextChallenge(journeys, map.id);
   $('#journey-progress').textContent = practice
     ? `${map.name} · Free play · All rivals available. Results do not affect Journey.`
-    : `${map.name} · ${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} No undo in Journey.`;
+    : `${map.name} · ${count} / 3 rivals beaten · ${goal ? `Next: ${goal.map === map.id ? '' : mapFor(goal.map).name + ' · '}${opponentFor(goal.opponent).name}` : 'All six journeys complete!'} · No undo.`;
   $('#opponent-cards').innerHTML = opponents
     .map((o, index) => {
       const available = practice || unlocked(progress, o.id),
         wins = progress.wins[o.id];
       return `<button class="opponent-card" data-rival="${o.id}" aria-pressed="${chosenOpponent === o.id}" ${available ? '' : 'disabled'}>
       <span class="opponent-symbol rival-${o.id}" aria-hidden="true">${o.symbol}</span><strong>${o.name}</strong><small>${o.level}</small>
-      <span class="rival-progress">${practice ? 'Free play' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Ready to challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
+      <span class="rival-progress">${practice ? 'Free play' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Next challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
     })
     .join('');
   const o = opponentFor(chosenOpponent);
@@ -894,21 +901,26 @@ $('#opponent-cards').addEventListener('click', (event) => {
 $('#next-opponent').addEventListener('click', () => {
   if (!isJourney(session)) return;
   const map = session.state.map ?? 'classic';
-  const next = opponents[opponents.findIndex((o) => o.id === opponentFor(session.opponent).id) + 1];
-  const target = next
-    ? mapFor(map)
-    : Object.values(maps).find((m) => m.id !== map && journeys[m.id].wins.guardian === 0);
-  if (!target || (next && !unlocked(journeys[map], next.id))) return;
+  const goal = nextChallenge(journeys, map);
+  if (!goal) return;
+  const target = mapFor(goal.map);
   $<HTMLInputElement>(`#map-${target.id}`).checked = true;
   $<HTMLInputElement>('#track-journey').checked = true;
-  chosenOpponent =
-    next?.id ??
-    opponents.find(
-      (o) => unlocked(journeys[target.id], o.id) && journeys[target.id].wins[o.id] === 0,
-    )?.id ??
-    'coral';
+  chosenOpponent = goal.opponent;
   saveHomeChoice();
   setScreen('home');
+});
+$('#practice-rival').addEventListener('click', () => {
+  if (!isJourney(session)) return;
+  $<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;
+  $<HTMLInputElement>('#track-free-play').checked = true;
+  chosenOpponent = session.opponent ?? 'coral';
+  $<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
+  saveHomeChoice();
+  setScreen('home');
+  announce(
+    `Free play against ${opponentFor(chosenOpponent).name}. Undo is available; Journey records stay unchanged.`,
+  );
 });
 $('#track-select').addEventListener('change', () => {
   render();
