@@ -22,6 +22,8 @@ import { initTutorial } from './ui/tutorial';
 import { initAppIcons } from './ui/app-icons';
 import { initPwa } from './pwa/client';
 import { initBackup } from './ui/backup';
+import { achievements } from './game/achievements';
+import { renderAchievements } from './ui/achievements';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzlesForMap, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
@@ -67,6 +69,12 @@ const selectedTrack = () =>
   $<HTMLInputElement>('input[name="play-track"]:checked').value as
     'journey' | 'puzzles' | 'free-play';
 let puzzleProgress = loadPuzzleProgress();
+const knownAchievements = new Set(
+  achievements(journeys, puzzleProgress)
+    .filter((a) => a.earned)
+    .map((a) => a.id),
+);
+let newAchievements: string[] = [];
 let chosenOpponent: OpponentId = session.opponent;
 let renderedMap: MapId | null = null;
 let pendingStart: Session['mode'] | false = false;
@@ -513,6 +521,16 @@ function render() {
     !allowsUndo(session) || ended || session.undo.length === 0 || thinking || animating;
   $('#move-count').textContent = `TURN ${s.turns + Number(!s.result)}`;
   $('#save-status').textContent = storageAvailable ? 'SAVED ON THIS DEVICE' : 'SAVING UNAVAILABLE';
+  const goals = achievements(journeys, puzzleProgress);
+  for (const goal of goals)
+    if (goal.earned && !knownAchievements.has(goal.id)) {
+      knownAchievements.add(goal.id);
+      newAchievements.push(goal.title);
+    }
+  renderAchievements(goals);
+  $('#achievement-notice').hidden = !ended || !newAchievements.length;
+  $('#achievement-notice').textContent =
+    `Goal reached: ${newAchievements.join(' · ')}. See Optional goals in Settings.`;
   offlineControls?.refresh();
   backupControls?.refresh();
 }
@@ -1007,6 +1025,7 @@ document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
   });
 });
 function startNewMatch(fresh: Session['mode'] | false = false) {
+  newAchievements = [];
   cancelComputer();
   clearDelivery();
   const starter = fresh ? 'blue' : other(session.starter);
@@ -1074,6 +1093,7 @@ function startPuzzle(id: string, retry = false) {
   if (animating) return;
   const puzzle = puzzleFor(id);
   if (!puzzle) return;
+  newAchievements = [];
   $<HTMLInputElement>(`#pack-${puzzle.map ?? 'classic'}`).checked = true;
   try {
     localStorage.setItem('dama-puzzle-pack-v1', puzzle.map ?? 'classic');

@@ -55,7 +55,10 @@ try {
         });
       }
       await expect(page.locator('#result-title')).toHaveText('Puzzle solved!');
-      if (number === 3) assert.equal(await page.locator('#next-puzzle').isHidden(), true);
+      if (number === 3) {
+        assert.equal(await page.locator('#next-puzzle').isHidden(), true);
+        await expect(page.locator('#achievement-notice')).toContainText('solver');
+      }
       await page.locator('#result-panel .go-home').click();
     }
     await expect(page.locator('#pack-progress')).toHaveText('3 / 3 solved');
@@ -69,6 +72,11 @@ try {
   assert.equal(await page.evaluate(() => localStorage.getItem('dama-session-v1')), match);
   await page.reload();
   assert.equal(await page.locator('#pack-islands').isChecked(), true);
+  await page.locator('#settings-button').click();
+  await page.locator('#achievements-settings summary').click();
+  assert.equal(await page.locator('.achievement.earned').count(), 6);
+  await expect(page.locator('#achievements-count')).toContainText('6 / 16');
+  await page.locator('#settings .primary.close').click();
   await page.locator('label:has(#pack-classic)').click();
   for (const size of [
     { width: 320, height: 568 },

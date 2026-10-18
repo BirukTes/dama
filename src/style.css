@@ -2493,6 +2493,51 @@ body.wide-map .board {
   padding: 12px;
   margin: 12px 0;
 }
+#achievements-settings {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0;
+}
+#achievements-settings summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+#achievements-count {
+  color: var(--muted);
+  font-size: 11px;
+}
+#achievements-list {
+  display: grid;
+  gap: 8px;
+}
+.achievement {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.achievement.earned {
+  background: var(--accent);
+}
+.achievement strong {
+  font-size: 13px;
+}
+.achievement p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 6px 0;
+}
+.achievement progress {
+  width: calc(100% - 70px);
+  accent-color: var(--highlight);
+}
+.achievement small {
+  display: inline-block;
+  width: 65px;
+  text-align: right;
+  font-size: 11px;
+}
 #backup-settings summary {
   cursor: pointer;
   font-size: 13px;

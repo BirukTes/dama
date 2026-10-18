@@ -6,7 +6,7 @@ Agreed sequence: fair Journey, backup/restore, clearer progression, map puzzle p
 - Phase 2 implemented: [Versioned JSON backup](BACKUPS.md), strict validation, restore preview and explicit replacement with rollback on write failure. Download/import/cancel/reload and failed-write recovery have automated coverage.
 - Phase 3 implemented: Home names the next unbeaten rival/map. Results offer retry/rematch and a Free play practice shortcut. Completed maps lead to the next unfinished map; completing all 18 rivals ends that sequence. Unit and browser progression checks cover goals, independent unlocks and practice navigation.
 - Phase 4 implemented: [All six map packs](MAP-PUZZLES.md), with six Classic and 15 new puzzles. Every new position has a legal reachability witness and a verified minimal solution against all defensive replies. Pack navigation, saved attempts and actual worker solutions have browser coverage.
-- Phase 5: Optional achievements derived from existing records, with no required grind or extra unlock gates.
+- Phase 5 implemented: 16 optional achievements in Settings → Optional goals. First Journey win, six map journeys, six puzzle packs, one pack without hints, all journeys and all puzzles. Awards derive from existing records and backups; no extra unlock gates, streaks or separate achievement storage. Newly reached goals appear in results.
 - Phase 6: Explain challenge settings, improve keyboard/dialog handling and evaluate bounded AI across maps. Physical-device and human difficulty checks must remain explicit.
 
 Implementation and validation details will be updated as each phase is completed.

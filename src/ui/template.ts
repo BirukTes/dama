@@ -3,6 +3,7 @@ import { helpMarkup } from './help';
 import { tutorialMarkup } from './tutorial';
 import { appIconMarkup } from './app-icons';
 import { backupMarkup } from './backup';
+import { achievementsMarkup } from './achievements';
 export const boardLines = (id: MapId = 'classic') => {
   const { points, edges } = mapFor(id);
   return edges
@@ -286,6 +287,7 @@ export const template = /* HTML */ `
     <p id="result-detail"></p>
     <p class="final-score" id="final-score"></p>
     <p class="dialog-note" id="journey-result" hidden></p>
+    <p class="dialog-note" id="achievement-notice" hidden></p>
     <div class="dialog-actions">
       <button class="primary" id="next-opponent" hidden>Next challenge →</button>
       <button class="primary" id="next-puzzle" hidden>Next puzzle →</button>
@@ -349,7 +351,7 @@ export const template = /* HTML */ `
       <p id="pwa-update-note" class="dialog-note" hidden></p>
       <button class="quiet" id="pwa-update-settings" hidden>Update &amp; reload</button>
     </details>
-    ${backupMarkup}
+    ${backupMarkup} ${achievementsMarkup}
     <label class="check">
       <input type="checkbox" id="immersive" />
       Focus view · more board, fewer tips
