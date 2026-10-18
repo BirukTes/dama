@@ -68,10 +68,16 @@ export function validState(value: unknown): value is State {
 }
 export function loadSession(key = storageKey): Session | null {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
+    return parseSession(localStorage.getItem(key) ?? 'null');
+  } catch {
+    return null;
+  }
+}
+export function parseSession(raw: string): Session | null {
+  try {
     const data = JSON.parse(raw);
     if (
+      !data ||
       data.version !== 1 ||
       !validState(data.state) ||
       !['solo', 'local'].includes(data.mode) ||

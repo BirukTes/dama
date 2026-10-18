@@ -27,7 +27,14 @@ export function emptyProgress(): Progress {
 }
 export function loadProgress(map: MapId = 'classic'): Progress {
   try {
-    const p = JSON.parse(localStorage.getItem(storageKey(map)) ?? 'null');
+    return parseProgress(localStorage.getItem(storageKey(map)) ?? 'null') ?? emptyProgress();
+  } catch {
+    return emptyProgress();
+  }
+}
+export function parseProgress(raw: string): Progress | null {
+  try {
+    const p = JSON.parse(raw);
     if (
       !p ||
       !['wins', 'losses', 'draws'].every((field) =>
@@ -36,10 +43,10 @@ export function loadProgress(map: MapId = 'classic'): Progress {
       !Array.isArray(p.recorded) ||
       !p.recorded.every((id: unknown) => typeof id === 'string')
     )
-      return emptyProgress();
+      return null;
     return p;
   } catch {
-    return emptyProgress();
+    return null;
   }
 }
 export function unlocked(p: Progress, id: OpponentId): boolean {

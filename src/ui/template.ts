@@ -2,6 +2,7 @@ import { mapFor, maps, type MapId } from '../game/maps';
 import { helpMarkup } from './help';
 import { tutorialMarkup } from './tutorial';
 import { appIconMarkup } from './app-icons';
+import { backupMarkup } from './backup';
 export const boardLines = (id: MapId = 'classic') => {
   const { points, edges } = mapFor(id);
   return edges
@@ -334,6 +335,7 @@ export const template = /* HTML */ `
       <p id="pwa-update-note" class="dialog-note" hidden></p>
       <button class="quiet" id="pwa-update-settings" hidden>Update &amp; reload</button>
     </details>
+    ${backupMarkup}
     <label class="check">
       <input type="checkbox" id="immersive" />
       Focus view · more board, fewer tips

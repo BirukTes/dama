@@ -20,6 +20,7 @@ import { enableDragging } from './ui/drag';
 import { initTutorial } from './ui/tutorial';
 import { initAppIcons } from './ui/app-icons';
 import { initPwa } from './pwa/client';
+import { initBackup } from './ui/backup';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
@@ -33,6 +34,8 @@ const selectedDifficulty = () =>
 const names: Record<Side, string> = { blue: 'Blue', coral: 'Coral' };
 let mainSession = loadSession();
 let offlineControls: ReturnType<typeof initPwa> | undefined;
+let backupControls: ReturnType<typeof initBackup> | undefined;
+let restoringBackup = false;
 let savedPuzzle = loadSession('dama-puzzle-session-v1');
 const restored = (() => {
   try {
@@ -498,6 +501,7 @@ function render() {
   $('#move-count').textContent = `TURN ${s.turns + Number(!s.result)}`;
   $('#save-status').textContent = storageAvailable ? 'SAVED ON THIS DEVICE' : 'SAVING UNAVAILABLE';
   offlineControls?.refresh();
+  backupControls?.refresh();
 }
 function cancelComputer() {
   if (timer) clearTimeout(timer);
@@ -1095,6 +1099,7 @@ $('#next-puzzle').addEventListener('click', () => {
 });
 
 document.addEventListener('visibilitychange', () => {
+  if (restoringBackup) return;
   if (document.hidden) {
     cancelComputer();
     if (hasGame) persist();
@@ -1103,6 +1108,21 @@ document.addEventListener('visibilitychange', () => {
 });
 restorePassNotice();
 if (hasGame) persist();
+backupControls = initBackup({
+  canRestore: () => screen === 'home' && !animating,
+  onRestored: () => {
+    restoringBackup = true;
+    cancelComputer();
+    cancelDrag();
+    try {
+      sessionStorage.setItem('dama-screen', 'home');
+      sessionStorage.setItem('dama-active-puzzle', 'false');
+    } catch {
+      /* Reload still validates imported sessions. */
+    }
+    location.reload();
+  },
+});
 offlineControls = initPwa({
   canUpdate: () => screen === 'home' && !animating,
   save: () => {
