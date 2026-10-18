@@ -9,6 +9,7 @@ export const isJourney = (s: Session) =>
   s.mode === 'solo' &&
   !s.puzzleId &&
   (s.track === 'journey' || (s.track === undefined && (s.state.map ?? 'classic') === 'classic'));
+export const allowsUndo = (s: Session) => !isJourney(s);
 
 export interface Progress {
   wins: Record<OpponentId, number>;

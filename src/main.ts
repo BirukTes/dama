@@ -14,6 +14,7 @@ import {
   recordResult,
   unlocked,
   isJourney,
+  allowsUndo,
 } from './persistence/progress';
 import { enableDragging } from './ui/drag';
 import { initTutorial } from './ui/tutorial';
@@ -485,10 +486,15 @@ function render() {
   }
   $('#status').textContent = status;
   $('#instruction').textContent = instruction;
-  $('#undo-button').hidden = ended;
+  $('#undo-button').hidden = ended || !allowsUndo(session);
+  $('#match-rules').textContent = isJourney(session)
+    ? 'Journey · No undo. Win to unlock the next rival. Your existing unlocks are kept.'
+    : puzzle
+      ? 'Puzzles · Undo is available while solving. Hints are recorded separately.'
+      : 'Free play · Undo is available while playing. Results do not affect Journey.';
   $<HTMLButtonElement>('#play-again').disabled = animating;
   $<HTMLButtonElement>('#undo-button').disabled =
-    ended || session.undo.length === 0 || thinking || animating;
+    !allowsUndo(session) || ended || session.undo.length === 0 || thinking || animating;
   $('#move-count').textContent = `TURN ${s.turns + Number(!s.result)}`;
   $('#save-status').textContent = storageAvailable ? 'SAVED ON THIS DEVICE' : 'SAVING UNAVAILABLE';
   offlineControls?.refresh();
@@ -739,7 +745,7 @@ $('#board').addEventListener('keydown', (event) => {
   }
 });
 $('#undo-button').addEventListener('click', () => {
-  if (animating || thinking || finished()) return;
+  if (!allowsUndo(session) || animating || thinking || finished()) return;
   const previous = session.undo.pop();
   if (!previous) return;
   cancelComputer();
@@ -858,7 +864,7 @@ function renderOpponents() {
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
   $('#journey-progress').textContent = practice
     ? `${map.name} · Free play · All rivals available. Results do not affect Journey.`
-    : `${map.name} · ${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} Progress saves on this browser.`;
+    : `${map.name} · ${count} / 3 rivals beaten · ${count === 3 ? 'Journey complete. Replay any rival.' : 'Win to meet the next rival.'} No undo in Journey.`;
   $('#opponent-cards').innerHTML = opponents
     .map((o, index) => {
       const available = practice || unlocked(progress, o.id),

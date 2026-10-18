@@ -6,7 +6,7 @@ Home has three equally prominent mode tabs: **Journey · Puzzles · Free play**.
 
 All six maps are available immediately. Each starts with Coral unlocked. Beating Coral unlocks the Runner on that map; beating the Runner unlocks Guardian. Beating Guardian completes that map's journey. Either Gentle or Standard counts. Wins, losses and draws are stored per rival and per map on this browser. Map choices show rivals beaten out of three. Unlocked rivals remain replayable.
 
-Results offer the next rival on the same map. Guardian wins offer the first unfinished map in catalogue order, selecting its next unbeaten available rival. If all journeys are complete, rematch and Home remain available. Journey supports the existing undo feature; this is personal progression, not a competitive ranking.
+Results offer the next rival on the same map. Guardian wins offer the first unfinished map in catalogue order, selecting its next unbeaten available rival. If all journeys are complete, rematch and Home remain available. Journey does not allow undo, including restored legacy Classic Journey saves. Free play and puzzles retain undo while playing. Existing unlocks are kept.
 
 ## Free play
 

@@ -25,7 +25,7 @@ try {
   await page.waitForFunction(
     () => JSON.parse(localStorage.getItem('dama-session-v1')).state.turns >= 2,
   );
-  await page.waitForFunction(() => !document.querySelector('#undo-button').disabled);
+  assert.equal(await page.locator('#undo-button').isHidden(), true);
   let before = await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state);
   await page.reload();
   assert.deepEqual(

@@ -286,6 +286,7 @@ export const template = /* HTML */ `
     </div>
     <h2 id="pause-title">Take your time.</h2>
     <p class="dialog-note">Your match is saved. Pick up where you left off.</p>
+    <p class="dialog-note" id="match-rules"></p>
     <div class="pause-actions">
       <button class="primary close">Resume play →</button>
       <button class="quiet" id="pause-settings">Settings</button>

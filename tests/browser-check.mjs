@@ -50,6 +50,7 @@ assert.equal(await page.locator('#home-screen').isVisible(), true);
 assert.equal(await page.locator('#play-screen').isVisible(), false);
 assert.equal(await page.locator('#continue-button').isVisible(), false);
 await page.screenshot({ path: '.inspection/home-desktop.png', fullPage: true });
+await page.locator('label:has(#track-free-play)').click();
 await page.locator('#start-button').click();
 assert.equal(await page.locator('#home-screen').isVisible(), false);
 await page.screenshot({ path: '.inspection/desktop.png', fullPage: true });
