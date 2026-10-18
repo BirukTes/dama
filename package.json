@@ -13,6 +13,7 @@
     "test": "vitest run",
     "analyze": "tsx src/analysis/analyze.ts",
     "analyze:rivals": "tsx src/analysis/rivals.ts",
+    "analyze:maps": "tsx src/analysis/calibrate.ts",
     "preview": "vite preview --host 0.0.0.0",
     "test:browser": "node tests/browser-check.mjs",
     "test:appearance": "node tests/appearance-browser.mjs",

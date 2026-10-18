@@ -7,7 +7,13 @@ import { initialState, legalMoves, applyMove, other, type Move, type Side } from
 import { loadSession, saveSession, type Session } from './persistence/save';
 import { template, boardNodes, boardLines } from './ui/template';
 import { maps, mapFor, nextSpot, isMapId, type MapId } from './game/maps';
-import { opponents, opponentFor, isOpponent, type OpponentId } from './game/opponents';
+import {
+  opponents,
+  opponentFor,
+  isOpponent,
+  challengeDescription,
+  type OpponentId,
+} from './game/opponents';
 import {
   loadProgress,
   saveProgress,
@@ -77,6 +83,7 @@ const knownAchievements = new Set(
 let newAchievements: string[] = [];
 let chosenOpponent: OpponentId = session.opponent;
 let renderedMap: MapId | null = null;
+let boardFocus = 0;
 let pendingStart: Session['mode'] | false = false;
 let rotationDismissed = false;
 let ownsFullscreen = false;
@@ -294,6 +301,10 @@ function render() {
   const practice = !isJourney(session);
   document.body.classList.toggle('wide-map', map.wide);
   if (renderedMap !== map.id) {
+    boardFocus = Math.max(
+      0,
+      s.board.findIndex((p) => p === 'blue'),
+    );
     $('#board svg').innerHTML = boardLines(map.id);
     document.querySelectorAll('#board [data-node]').forEach((node) => node.remove());
     $('#board').insertAdjacentHTML('beforeend', boardNodes(map.id));
@@ -308,6 +319,10 @@ function render() {
   const helpMap = screen === 'play' ? map : mapFor(selectedMap());
   $('#help-map-note').textContent =
     `${helpMap.name}: ${helpMap.description} Three pawns, one connection per turn, first to deliver three wins.`;
+  $('#help-challenge-note').textContent =
+    activePuzzle() && screen === 'play'
+      ? 'Puzzles use an exact defender. The challenge setting does not weaken its replies.'
+      : challengeDescription(screen === 'play' ? session.difficulty : selectedDifficulty());
   const puzzle = activePuzzle();
   const outcome = puzzle && puzzleOutcome(s, puzzle, session.undo.length);
   const ended = finished();
@@ -385,6 +400,7 @@ function render() {
       .filter((name) => button.classList.contains(name))
       .join(' ');
     button.className = `node ${owner ?? 'empty'} ${selected === n ? 'selected' : ''} ${moves.some((m) => m.to === n) ? 'legal' : ''} ${lastMove?.to === n ? 'last' : ''} ${gestureClasses}`;
+    button.tabIndex = n === boardFocus ? 0 : -1;
     button.setAttribute(
       'aria-label',
       `${mapFor(session.state.map).names[n]}: ${owner ? names[owner] + ' pawn' : 'empty'}${moves.some((m) => m.to === n) ? ', legal destination' : ''}`,
@@ -771,12 +787,35 @@ $('#board').addEventListener('keydown', (event) => {
   if (!button) return;
   const n = Number(button.dataset.node);
   if (e.key === 'Escape') {
-    selected = null;
-    render();
+    e.preventDefault();
+    e.stopPropagation();
+    if (selected !== null) {
+      selected = null;
+      render();
+      announce('Selection cleared.');
+    } else if (!document.querySelector('dialog[open]')) openDialog('#pause');
   }
   if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
     e.preventDefault();
     $<HTMLButtonElement>(`[data-node="${nextSpot(session.state.map, n, e.key)}"]`).focus();
+  }
+});
+$('#board').addEventListener('focusin', (event) => {
+  const node = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-node]');
+  if (!node) return;
+  boardFocus = Number(node.dataset.node);
+  $('#board')
+    .querySelectorAll<HTMLButtonElement>('[data-node]')
+    .forEach((button) => (button.tabIndex = Number(button.dataset.node) === boardFocus ? 0 : -1));
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && screen === 'play' && !document.querySelector('dialog[open]')) {
+    event.preventDefault();
+    if (selected !== null) {
+      selected = null;
+      render();
+      announce('Selection cleared.');
+    } else openDialog('#pause');
   }
 });
 $('#undo-button').addEventListener('click', () => {
@@ -951,7 +990,11 @@ $('#track-select').addEventListener('change', () => {
   render();
   saveHomeChoice();
 });
-$('#difficulty-select').addEventListener('change', saveHomeChoice);
+$('#difficulty-select').addEventListener('change', () => {
+  saveHomeChoice();
+  render();
+  announce(challengeDescription(selectedDifficulty()));
+});
 $('#map-select').addEventListener('change', () => {
   render();
   saveHomeChoice();

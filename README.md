@@ -23,6 +23,7 @@ npm.cmd test
 npm.cmd run build
 npm.cmd run analyze
 npm.cmd run analyze:rivals
+npm.cmd run analyze:maps
 npm.cmd run analyze -- crossroads
 npm.cmd run analyze -- long-crossing
 ```
@@ -37,6 +38,8 @@ npm.cmd run test:progression
 npm.cmd run test:modes
 npm.cmd run test:icons
 npm.cmd run test:offline
+npm.cmd run test:solo
+npm.cmd run test:packs
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
@@ -53,7 +56,7 @@ Each side starts with three pawns on one edge of the selected board. Move one pa
 
 Provisional rules pass a blocked player and draw on mutual blocking, threefold repetition, or 100 individual turns including passes. A fresh match starts with Blue; rematches alternate the starting side.
 
-The prototype supports computer matches and two-player practice on one device. Practice undo restores the previous human turn in solo mode. The computer follows the same rules, uses bounded search in a worker, and pauses on Home or while menus are open. Gentle and Standard are heuristic difficulties rather than proven optimal play.
+The prototype supports computer matches and two-player practice on one device. Journey has no undo; Free play and puzzles retain it while playing. Practice undo restores the previous human turn in solo mode. Existing unlocks are kept. The computer follows the same rules, uses bounded search in a worker, and pauses on Home or while menus are open. Gentle and Standard are heuristic difficulties rather than proven optimal play.
 
 Journey mode follows a separate three-rival journey on each map: Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Win against each rival to unlock the next; either challenge setting counts. Rival profiles show playing styles and that map’s local win/loss/draw records. All maps are available from the start; each unlocks rivals independently. Free play offers every rival immediately and supports a friend on the same device, without changing Journey records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
 
@@ -63,7 +66,7 @@ All rivals now take immediate wins and avoid an immediate losing reply when poss
 
 Home's board selector offers six maps: **Classic** (9 spots), **Crossroads** (9), **Ring Road** (9), **Twin Bridges** (12), **Long Crossing** (15), and **Islands** (9, including a passing bay). All use three pawns per side, opposite-edge delivery, and the same move/pass/draw rules. Larger maps use a wider layout. Both computer and local play support every map; undo, rematches, keyboard navigation and saves retain the correct graph. Older saves load as Classic.
 
-All six maps have independent Journey records and rival unlocks. Free play makes every rival available on any map without affecting those records. Existing Classic progress is preserved; older alternative-board practice saves remain Free play. The six authored puzzles remain on Classic and save separately. See [the game structure](docs/GAME-STRUCTURE.md) and [the board catalogue and validation](docs/BOARD-MAPS.md) for shapes, analysis and playtesting limits, and [the original Crossroads delivery notes](docs/CROSSROADS.md).
+All six maps have independent Journey records and rival unlocks. Free play makes every rival available on any map without affecting those records. Existing Classic progress is preserved; older alternative-board practice saves remain Free play. All maps now have puzzle packs, saved separately from regular matches. See [the game structure](docs/GAME-STRUCTURE.md), [map puzzle validation](docs/MAP-PUZZLES.md) and [the board catalogue](docs/BOARD-MAPS.md).
 
 ## Interactive help
 
@@ -73,7 +76,7 @@ The lesson runs in its own modal board. It never replaces a match, puzzle attemp
 
 ## Puzzles
 
-Home's **Puzzles** tab shows the **Classic · First steps** pack of six free challenges, ranging from one to four Blue moves. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. Every puzzle is reachable under the original rules and has been checked against every legal reply, including draw history and automatic passes.
+Home's **Puzzles** tab shows six free map packs: six Classic challenges ranging from one to four Blue moves, plus three introductory puzzles for each alternative board. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. All 21 puzzles are reachable under their map's rules and checked against every legal reply, including draw history and automatic passes.
 
 Hints give a clue and a verified next move in a dialog. Completion records distinguish hinted and unassisted solutions, with best move counts. Retry and next-puzzle actions are available in results. Attempts save separately from regular matches, so trying a puzzle preserves an unfinished solo or local game. Return Home to continue that match; select the saved puzzle to resume its attempt. Puzzles do not unlock rivals or add to rival statistics.
 
@@ -97,7 +100,7 @@ The original font copyright and licence are included in `public/licenses/dm-sans
 
 The baseline analysis enumerates 2,044 reachable positions, including 10 automatic-pass transitions and no mutual-blocking terminal positions. Retrograde classification treats indefinite cycles as draws and finds both initial positions drawn under perfect play. This excludes threefold-repetition history and the 100-turn cap, and does not establish human match quality or final-ruleset balance.
 
-The interactive tutorial and installable/offline production build are available. Save export/import, further challenge packs, difficulty tuning and physical-phone validation remain upcoming. See [the immersive play and journey notes](docs/IMMERSIVE-JOURNEY.md) for the preceding interface update.
+The tutorial, offline production build, [backup export/import](docs/BACKUPS.md), six puzzle packs and 16 optional achievements are available. Home names the next Journey goal; results offer retry/rematch and Free play practice. Settings → Optional goals shows achievements derived from existing records, without adding unlock gates. See [the six improvements](docs/IMPROVEMENTS.md) and [difficulty/accessibility notes](docs/SOLO-POLISH.md). Physical-phone validation and human difficulty feedback remain necessary.
 
 ## App icons and installation testing
 

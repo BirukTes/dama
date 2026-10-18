@@ -10,7 +10,7 @@ export const backupMarkup = `<details id="backup-settings"><summary>Backup &amp;
 <button class="quiet" id="backup-export">Download backup</button>
 <label class="backup-file">Choose backup file<input id="backup-file" type="file" accept=".json,application/json" /></label>
 <p class="dialog-note" id="backup-status" role="status"></p>
-<div id="backup-preview" hidden><p class="dialog-note" id="backup-summary"></p><button class="primary" id="backup-restore">Replace data &amp; restore</button><button class="quiet" id="backup-cancel">Cancel</button></div>
+<div id="backup-preview" hidden><p class="dialog-note" id="backup-summary"></p><button class="quiet restore-action" id="backup-restore">Replace data &amp; restore</button><button class="quiet" id="backup-cancel">Cancel</button></div>
 <p class="dialog-note" id="backup-home-note">Return Home before restoring. Other open DA’MA tabs should be closed first.</p></details>`;
 export function initBackup(options: { canRestore: () => boolean; onRestored: () => void }) {
   const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;

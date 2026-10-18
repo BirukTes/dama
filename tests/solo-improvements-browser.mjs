@@ -53,13 +53,11 @@ try {
   const text = await readFile(await (await download).path(), 'utf8'),
     backup = JSON.parse(text);
   assert.equal(backup.format, 'dama-backup');
-  await page
-    .locator('#backup-file')
-    .setInputFiles({
-      name: 'bad.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{invalid'),
-    });
+  await page.locator('#backup-file').setInputFiles({
+    name: 'bad.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{invalid'),
+  });
   await expect(page.locator('#backup-status')).toContainText('not a readable');
   await page.locator('#theme').selectOption('dark');
   const file = { name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(text) };
@@ -79,6 +77,27 @@ try {
     await page.evaluate(() => localStorage.getItem('dama-settings-v1')),
     backup.entries['dama-settings-v1'],
   );
+  await page.locator('#local-button').click();
+  assert.equal(await page.locator('#board [tabindex="0"]').count(), 1);
+  await page.locator('#board .node.blue').first().focus();
+  await page.keyboard.press('Space');
+  assert.equal(await page.locator('#board [aria-pressed="true"]').count(), 1);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#board [aria-pressed="true"]').count(), 0);
+  assert.equal(await page.locator('dialog[open]').count(), 0);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#pause')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#pause')).not.toBeVisible();
+  assert.equal(await page.locator('#board [tabindex="0"]').count(), 1);
+  const focused = await page.evaluate(() => document.activeElement.dataset.node);
+  await page.keyboard.press('ArrowDown');
+  assert.notEqual(await page.evaluate(() => document.activeElement.dataset.node), focused);
+  await page.locator('#home-button').click();
+  await page.locator('label:has(#difficulty-gentle)').click();
+  await page.locator('#help-button').click();
+  await expect(page.locator('#help-challenge-note')).toContainText('Gentle uses shorter lookahead');
+  await page.locator('#help .primary.close').click();
   assert.deepEqual(errors, []);
   console.log(
     'Passed Journey undo protection, Free play undo, backup download, malformed rejection, preview/cancel and restore with saved state/preferences.',

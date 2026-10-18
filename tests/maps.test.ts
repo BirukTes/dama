@@ -85,7 +85,7 @@ describe('Crossroads practice map', () => {
         matchId: 'practice',
       }),
     ).toBe(p);
-    for (const puzzle of puzzles) expect(puzzleState(puzzle).map).toBeUndefined();
+    for (const puzzle of puzzles) expect(puzzleState(puzzle).map).toBe(puzzle.map);
     saveSession({ ...s, puzzleId: puzzles[0].id });
     expect(loadSession('dama-puzzle-session-v1')).toBeNull();
   });

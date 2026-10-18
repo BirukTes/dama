@@ -36,4 +36,4 @@ The baseline omits repetition history and turn limits, classifying indefinite cy
 
 `npm.cmd run test:maps` checks the original Crossroads flow and all four additions in Edge: direct dragging, a real Guardian worker reply, undo/reload, complete local games, map choice containment, and separate touch targets in Standard/Focus at 320×568, 390×844, 761×752, 844×390 and 1366×768. General appearance, journey, audio and puzzle suites cover regressions. Browser emulation does not replace Safari and physical-device testing.
 
-Tutorial and offline installation have since been implemented; see [interactive help](INTERACTIVE-HELP.md) and [offline installation](OFFLINE-INSTALLATION.md). New map-specific puzzle packs, deployment of the latest changes and competitive balance calibration remain follow-ups.
+Tutorial, offline installation and introductory map-specific puzzle packs have since been implemented; see [interactive help](INTERACTIVE-HELP.md), [offline installation](OFFLINE-INSTALLATION.md) and [map packs](MAP-PUZZLES.md). Deployment of the latest solo enhancements, deeper puzzle content, human difficulty calibration and physical-device checks remain follow-ups.

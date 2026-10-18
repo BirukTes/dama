@@ -1798,7 +1798,7 @@ body.high-contrast[data-theme='dark'][data-opponent='guardian'] {
     margin-bottom: 8px;
   }
   #puzzle-pack-select span {
-    min-height: 32px;
+    min-height: 44px;
     padding: 4px 2px;
     font-size: 10px;
   }
@@ -2493,6 +2493,25 @@ body.wide-map .board {
   padding: 12px;
   margin: 12px 0;
 }
+#settings {
+  --settings-padding: 28px;
+  padding: var(--settings-padding);
+  scroll-padding-top: 64px;
+}
+#settings > .dialog-top {
+  position: sticky;
+  top: calc(-1 * var(--settings-padding));
+  z-index: 3;
+  background: var(--surface);
+  padding: 8px var(--settings-padding);
+  margin: calc(-1 * var(--settings-padding)) calc(-1 * var(--settings-padding)) 22px;
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width: 620px) {
+  #settings {
+    --settings-padding: 22px;
+  }
+}
 #achievements-settings {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -2557,6 +2576,16 @@ body.wide-map .board {
   min-width: 0;
   font: inherit;
   user-select: auto;
+}
+.restore-action {
+  background: var(--ink);
+  color: var(--paper);
+}
+#backup-settings summary,
+#pwa-settings summary,
+#achievements-settings summary {
+  min-height: 44px;
+  padding: 10px 0;
 }
 #pwa-settings summary {
   min-height: 24px;

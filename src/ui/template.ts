@@ -326,12 +326,12 @@ export const template = /* HTML */ `
     <span>A new version is ready.</span>
     <button class="quiet" id="pwa-update">Update &amp; reload</button>
   </div>
-  <dialog id="settings">
+  <dialog id="settings" aria-labelledby="settings-title">
     <div class="dialog-top">
       <p class="eyebrow">MAKE YOURSELF AT HOME</p>
       <button class="quiet close" aria-label="Close settings">Close ×</button>
     </div>
-    <h2>Your kind of play.</h2>
+    <h2 id="settings-title">Your kind of play.</h2>
     <label class="field">
       Theme
       <select id="theme">
@@ -391,12 +391,12 @@ export const template = /* HTML */ `
       </a>
     </div>
   </dialog>
-  <dialog id="restart">
+  <dialog id="restart" aria-labelledby="restart-title" aria-describedby="restart-detail">
     <div class="dialog-top">
       <p class="eyebrow">A FRESH START</p>
       <button class="quiet close" aria-label="Cancel new match">Close ×</button>
     </div>
-    <h2>Another way across?</h2>
+    <h2 id="restart-title">Another way across?</h2>
     <p class="dialog-note" id="restart-detail">This replaces your unfinished match.</p>
     <button class="primary" id="confirm-new">Start new match</button>
     <button class="quiet close">Keep playing</button>

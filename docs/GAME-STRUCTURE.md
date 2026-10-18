@@ -16,7 +16,7 @@ The match retains its Journey/Free play identity through undo, reload, resume an
 
 ## Puzzles
 
-The Puzzles tab shows solved counts, a resume action for an unfinished puzzle, and the existing six challenges forming **Classic · First steps**, ordered from one to four Blue moves. They retain their exact bounded defence, independent completion records, hints and separate saved attempt. Playing a puzzle preserves the regular match and never unlocks Journey rivals. Other map packs are future authored content, not placeholder levels in this release.
+The Puzzles tab offers six map packs: the original six Classic challenges and three introductory endgames for each alternative map, for 21 puzzles total. They retain exact bounded defence, independent completion records, hints and a separate saved attempt. Playing a puzzle preserves the regular match and never unlocks Journey rivals. Next puzzle stays within the selected pack. See [map puzzle validation](MAP-PUZZLES.md).
 
 Home remembers the selected tab, including Puzzles. Switching tabs does not alter an ongoing game. The regular match action explicitly says Continue/Review Journey, Free play or Friend match, with its board below and opponent in its accessible label. The Puzzles panel separately resumes its saved attempt. All three tabs support native radio keyboard navigation.
 
@@ -30,4 +30,4 @@ New sessions persist `track: journey | free-play` alongside the existing solo/lo
 
 Unit checks cover independent map records, legacy Classic preservation, old alternative saves, wins/losses/draws, unlock order, deduplication, excluded modes and save validation. `npm.cmd run test:progression` exercises 18 real delivery/unlock flows, reloads, next-rival/map navigation, mode persistence and puzzle isolation in the browser. `npm.cmd run test:modes` covers the three modes, saved match/puzzle isolation, keyboard selection, tab persistence and five screen sizes with and without a saved puzzle. Existing map, appearance, journey, audio, puzzle and production suites remain applicable.
 
-The guided tutorial is available through How to play; see [interactive help](INTERACTIVE-HELP.md). The production build now supports [offline installation and safe updates](OFFLINE-INSTALLATION.md). Save export/import and physical-device validation remain. Map-specific puzzle packs and difficulty calibration need separate content/playtesting work.
+The guided tutorial is available through How to play; see [interactive help](INTERACTIVE-HELP.md). The production build supports [offline installation and safe updates](OFFLINE-INSTALLATION.md), [save backup/restore](BACKUPS.md), map puzzle packs and optional achievements. See [the six solo improvements](IMPROVEMENTS.md) and [difficulty/accessibility notes](SOLO-POLISH.md). Physical-device validation and human difficulty feedback remain necessary.

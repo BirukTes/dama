@@ -6,6 +6,7 @@ import {
   type State,
   type Move,
   goalsFor,
+  key,
 } from '../game/rules';
 import { maps, mapFor, type MapId } from '../game/maps';
 import type { OpponentId } from '../game/opponents';
@@ -94,6 +95,18 @@ export function chooseMove(
   });
   if (safe.length) moves = safe;
   if (difficulty === 'gentle' && random() < 0.25) return pick(moves);
+  // Static evaluation depends on position, not its route. Cache only nonterminal
+  // leaves; terminal draws/wins still depend on history and the turn count.
+  const evaluations = new Map<string, number>();
+  const valueOf = (state: State) => {
+    if (state.result) return evaluate(state, side, opponent);
+    const position = key(state),
+      cached = evaluations.get(position);
+    if (cached !== undefined) return cached;
+    const value = evaluate(state, side, opponent);
+    evaluations.set(position, value);
+    return value;
+  };
   let nodes = 0;
   const exhausted = Symbol('search budget');
   const ordered = (state: State) =>
@@ -104,7 +117,7 @@ export function chooseMove(
     );
   function search(state: State, depth: number, alpha: number, beta: number): number {
     if (++nodes > 24000) throw exhausted;
-    if (depth === 0 || state.result) return evaluate(state, side, opponent);
+    if (depth === 0 || state.result) return valueOf(state);
     const maximizing = state.turn === side;
     let best = maximizing ? -Infinity : Infinity;
     for (const m of ordered(state)) {
@@ -114,7 +127,7 @@ export function chooseMove(
       else beta = Math.min(beta, best);
       if (beta <= alpha) break;
     }
-    return Number.isFinite(best) ? best : evaluate(state, side, opponent);
+    return Number.isFinite(best) ? best : valueOf(state);
   }
   let finalists = moves;
   const maxDepth =
