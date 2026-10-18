@@ -87,7 +87,8 @@ export function parseSession(raw: string): Session | null {
       (data.opponent !== undefined && !isOpponent(data.opponent)) ||
       (data.matchId !== undefined && typeof data.matchId !== 'string') ||
       (data.puzzleId !== undefined && (!puzzleFor(data.puzzleId) || data.mode !== 'solo')) ||
-      (data.puzzleId !== undefined && (data.state.map ?? 'classic') !== 'classic') ||
+      (data.puzzleId !== undefined &&
+        (data.state.map ?? 'classic') !== (puzzleFor(data.puzzleId)?.map ?? 'classic')) ||
       (data.puzzleHinted !== undefined && typeof data.puzzleHinted !== 'boolean') ||
       !Array.isArray(data.undo) ||
       data.undo.length > 100 ||

@@ -8,6 +8,7 @@ const progressKeys = Object.values(maps).map((m) =>
   m.id === 'classic' ? 'dama-progress-v1' : `dama-progress-${m.id}-v1`,
 );
 export const backupKeys = [
+  'dama-puzzle-pack-v1',
   'dama-session-v1',
   'dama-puzzle-session-v1',
   'dama-puzzles-v1',
@@ -26,6 +27,7 @@ export interface Backup {
 const object = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && !Array.isArray(v);
 function validEntry(key: string, raw: string): boolean {
+  if (key === 'dama-puzzle-pack-v1') return isMapId(raw);
   if (key === 'dama-app-icon-v1')
     return ['board-light', 'board-dark', 'monogram-light', 'monogram-dark'].includes(raw);
   const data: unknown = JSON.parse(raw);

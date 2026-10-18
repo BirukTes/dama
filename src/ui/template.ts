@@ -83,10 +83,23 @@ export const template = /* HTML */ `
       </div>
       <p class="journey-summary" id="journey-progress"></p>
       <section id="puzzle-home" aria-labelledby="puzzles-title" hidden>
+        <div
+          class="view-switch"
+          id="puzzle-pack-select"
+          role="radiogroup"
+          aria-label="Puzzle map pack"
+        >
+          ${Object.values(maps)
+            .map(
+              (m) =>
+                `<label><input class="sr-only" type="radio" name="puzzle-pack" id="pack-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span>${m.name}</span></label>`,
+            )
+            .join('')}
+        </div>
         <div class="puzzle-pack-heading">
           <div>
             <h2 id="puzzles-title">Classic · First steps</h2>
-            <p>Six short challenges, from one to four moves. Play Blue; Coral defends.</p>
+            <p id="pack-description">Short challenges. Play Blue; Coral defends.</p>
           </div>
           <div class="puzzle-pack-actions">
             <p id="pack-progress"></p>

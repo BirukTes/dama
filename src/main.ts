@@ -23,13 +23,14 @@ import { initAppIcons } from './ui/app-icons';
 import { initPwa } from './pwa/client';
 import { initBackup } from './ui/backup';
 import { createMatchId } from './persistence/match-id';
-import { puzzles, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
+import { puzzles, puzzlesForMap, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
 import { loadPuzzleProgress, recordPuzzle, savePuzzleProgress } from './persistence/puzzles';
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string): T =>
   document.querySelector<T>(selector)!;
 const selectedMap = () => $<HTMLInputElement>('input[name="board-map"]:checked').value as MapId;
+const selectedPack = () => $<HTMLInputElement>('input[name="puzzle-pack"]:checked').value as MapId;
 const selectedDifficulty = () =>
   $<HTMLInputElement>('input[name="challenge"]:checked').value as Session['difficulty'];
 const names: Record<Side, string> = { blue: 'Blue', coral: 'Coral' };
@@ -100,6 +101,12 @@ try {
 }
 $('#app').innerHTML = template;
 initAppIcons();
+try {
+  const pack = localStorage.getItem('dama-puzzle-pack-v1');
+  if (isMapId(pack)) $<HTMLInputElement>(`#pack-${pack}`).checked = true;
+} catch {
+  /* The pack can be chosen without storage. */
+}
 
 $<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
 $<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;
@@ -347,7 +354,7 @@ function render() {
   $<HTMLButtonElement>('#play-again').disabled = animating;
   const moves = legalMoves(s).filter((m) => m.from === selected);
   $('#mode-label').textContent = puzzle
-    ? `PUZZLE ${puzzles.indexOf(puzzle) + 1} · ${puzzle.title.toUpperCase()}`
+    ? `${map.name.toUpperCase()} · PUZZLE ${puzzlesForMap(map.id).indexOf(puzzle) + 1} · ${puzzle.title.toUpperCase()}`
     : session.mode === 'solo'
       ? `${map.name.toUpperCase()} · ${practice ? 'FREE PLAY' : 'JOURNEY'} · ${session.difficulty.toUpperCase()}`
       : `${map.name.toUpperCase()} · TWO PLAYERS`;
@@ -452,7 +459,7 @@ function render() {
         `${map.name} · Free play. Results do not affect Journey. Try a different rival or rematch.`;
   }
   $('#next-puzzle').hidden =
-    !puzzle || outcome !== 'solved' || puzzles.indexOf(puzzle) === puzzles.length - 1;
+    !puzzle || outcome !== 'solved' || puzzlesForMap(map.id).at(-1) === puzzle;
   $('#puzzle-hint').hidden = !puzzle || ended;
   $<HTMLButtonElement>('#puzzle-hint').disabled = thinking || animating;
   $('#play-again').textContent = puzzle ? 'Retry puzzle ↻' : 'Play again ↻';
@@ -853,7 +860,7 @@ function renderOpponents() {
   $('.lobby-bottom').hidden = puzzleMode;
   if (puzzleMode) {
     $('#journey-progress').textContent =
-      'Puzzles · Solve a position within the move limit. Separate from your match and Journey.';
+      `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length} solved across six packs · Separate from Journey.`;
     renderPuzzles();
     return;
   }
@@ -1031,28 +1038,48 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
 }
 $('#confirm-new').addEventListener('click', () => startNewMatch(pendingStart));
 function renderPuzzles() {
+  const map = mapFor(selectedPack()),
+    pack = puzzlesForMap(map.id);
+  $('#puzzles-title').textContent =
+    `${map.name} · ${map.id === 'classic' ? 'First steps' : 'Routes & timing'}`;
+  $('#pack-description').textContent =
+    `${pack.length} challenges, one to ${Math.max(...pack.map((p) => p.moves))} moves. Play Blue; Coral defends.`;
   $('#pack-progress').textContent =
-    `${Object.keys(puzzleProgress).length} / ${puzzles.length} solved`;
+    `${pack.filter((p) => puzzleProgress[p.id]).length} / ${pack.length} solved`;
   const p = savedPuzzle?.puzzleId && puzzleFor(savedPuzzle.puzzleId);
   const resume = p && !puzzleOutcome(savedPuzzle!.state, p, savedPuzzle!.undo.length);
   $('#resume-puzzle').hidden = !resume;
-  $('#resume-puzzle').textContent = p ? `Continue puzzle · ${p.title} →` : '';
+  $('#resume-puzzle').textContent = p ? `Continue · ${mapFor(p.map).name} · ${p.title} →` : '';
 
-  $('#puzzle-list').innerHTML = puzzles
+  $('#puzzle-list').innerHTML = pack
     .map((p, index) => {
       const completed = puzzleProgress[p.id];
       const resume =
         savedPuzzle?.puzzleId === p.id &&
         !puzzleOutcome(savedPuzzle.state, p, savedPuzzle.undo.length);
-      const preview = `<svg viewBox="0 0 100 100" aria-hidden="true">${p.board.map((side, n) => `<circle cx="${16 + (n % 3) * 34}" cy="${16 + Math.floor(n / 3) * 34}" r="${side ? 8 : 3}" class="preview-${side ?? 'empty'}"/>`).join('')}</svg>`;
+      const preview = `<svg viewBox="0 0 500 500" aria-hidden="true"><g class="preview-lines">${boardLines(p.map)}</g>${p.board.map((side, n) => `<circle cx="${mapFor(p.map).points[n][0]}" cy="${mapFor(p.map).points[n][1]}" r="${side ? 27 : 10}" class="preview-${side ?? 'empty'}"/>`).join('')}</svg>`;
       return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'Continue your saved attempt →' : 'Try this puzzle →'}</small></span></button>`;
     })
     .join('');
 }
+$('#puzzle-pack-select').addEventListener('change', () => {
+  try {
+    localStorage.setItem('dama-puzzle-pack-v1', selectedPack());
+  } catch {
+    /* Pack selection remains available. */
+  }
+  renderPuzzles();
+});
 function startPuzzle(id: string, retry = false) {
   if (animating) return;
   const puzzle = puzzleFor(id);
   if (!puzzle) return;
+  $<HTMLInputElement>(`#pack-${puzzle.map ?? 'classic'}`).checked = true;
+  try {
+    localStorage.setItem('dama-puzzle-pack-v1', puzzle.map ?? 'classic');
+  } catch {
+    /* Optional preference. */
+  }
   cancelComputer();
   cancelDrag();
   clearDelivery();
@@ -1106,7 +1133,8 @@ $('#puzzle-hint').addEventListener('click', () => {
 });
 $('#next-puzzle').addEventListener('click', () => {
   const p = activePuzzle();
-  const next = p && puzzles[puzzles.indexOf(p) + 1];
+  const pack = puzzlesForMap(session.state.map ?? 'classic');
+  const next = p && pack[pack.indexOf(p) + 1];
   if (next) startPuzzle(next.id);
 });
 

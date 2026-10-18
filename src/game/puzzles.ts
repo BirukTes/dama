@@ -1,6 +1,9 @@
 import { key, type State } from './rules';
+import { mapPuzzles } from './map-puzzles';
+import type { MapId } from './maps';
 
 export interface Puzzle {
+  map?: MapId;
   id: string;
   title: string;
   theme: string;
@@ -10,7 +13,7 @@ export interface Puzzle {
   hint: string;
   explanation: string;
 }
-export const puzzles: Puzzle[] = [
+export const classicPuzzles: Puzzle[] = [
   {
     id: 'last-step',
     title: 'One last step',
@@ -78,9 +81,12 @@ export const puzzles: Puzzle[] = [
       'Move middle right into the centre before taking the easy top-left delivery. Controlling the centre denies Coral its fastest route. You can then deliver all three pawns within four of your moves, even from 0–2 down.',
   },
 ];
+export const puzzles: Puzzle[] = [...classicPuzzles, ...mapPuzzles];
+export const puzzlesForMap = (map: MapId) => puzzles.filter((p) => (p.map ?? 'classic') === map);
 export const puzzleFor = (id: string | undefined) => puzzles.find((p) => p.id === id);
 export function puzzleState(p: Puzzle): State {
   const s: State = {
+    ...(p.map ? { map: p.map } : {}),
     board: [...p.board],
     delivered: { ...p.delivered },
     turn: 'blue',

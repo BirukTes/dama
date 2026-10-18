@@ -27,7 +27,9 @@
     "test:tutorial": "node tests/tutorial-browser.mjs",
     "test:modes": "node tests/modes-browser.mjs",
     "test:icons": "node tests/icons-browser.mjs",
-    "test:offline": "node tests/offline-browser.mjs"
+    "test:offline": "node tests/offline-browser.mjs",
+    "test:packs": "node tests/map-puzzles-browser.mjs",
+    "test:solo": "node tests/solo-improvements-browser.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
