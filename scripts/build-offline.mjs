@@ -15,6 +15,9 @@ const paths = (await files(root))
   .sort();
 const entries = [];
 const hash = createHash('sha256');
+const source = await readFile(new URL('../src/pwa/service-worker.js', import.meta.url), 'utf8');
+// Worker-only fixes must not reuse a cache owned by the still-active worker.
+hash.update(source);
 for (const path of paths) {
   const content = await readFile(path),
     url = '/' + relative(root, path).replaceAll('\\', '/');
@@ -23,7 +26,6 @@ for (const path of paths) {
   hash.update(url).update(content);
 }
 const version = hash.digest('hex').slice(0, 16);
-const source = await readFile(new URL('../src/pwa/service-worker.js', import.meta.url), 'utf8');
 await writeFile(
   join(root, 'sw.js'),
   source.replace('__DAMA_VERSION__', version).replace('__DAMA_PRECACHE__', JSON.stringify(entries)),

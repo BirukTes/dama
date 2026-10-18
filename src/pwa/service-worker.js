@@ -4,6 +4,23 @@ const FILES = __DAMA_PRECACHE__;
 const CACHE = `dama-shell-${VERSION}`;
 const PREFIX = 'dama-shell-';
 const urls = new Set(FILES.map((file) => file.url));
+const htmlAliases = new Map(
+  FILES.filter((file) => file.url.endsWith('.html')).map((file) => [
+    file.url.endsWith('/index.html') ? file.url.slice(0, -10) : file.url.slice(0, -5),
+    file.url,
+  ]),
+);
+function withoutRedirectHistory(response) {
+  // A followed redirect cannot answer a navigation with redirect mode "manual".
+  // Keep the verified content/headers, without the network response's URL history.
+  return response?.redirected
+    ? new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      })
+    : response;
+}
 async function prepare() {
   const existed = await caches.has(CACHE);
   const cache = await caches.open(CACHE);
@@ -11,6 +28,12 @@ async function prepare() {
     // Integrity prevents a partial deployment or SPA fallback becoming an offline asset.
     await cache.addAll(
       FILES.map((file) => new Request(file.url, { cache: 'reload', integrity: file.integrity })),
+    );
+    await Promise.all(
+      FILES.map(async (file) => {
+        const response = await cache.match(file.url);
+        if (response?.redirected) await cache.put(file.url, withoutRedirectHistory(response));
+      }),
     );
   } catch (error) {
     if (!existed) await caches.delete(CACHE);
@@ -34,12 +57,12 @@ self.addEventListener('fetch', (event) => {
   const request = event.request,
     url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-  const path = url.pathname === '/' ? '/index.html' : url.pathname;
+  const path = htmlAliases.get(url.pathname) || url.pathname;
   if (urls.has(path)) {
     event.respondWith(
       (async () => {
         const response = await (await caches.open(CACHE)).match(path);
-        return response || fetch(request);
+        return response ? withoutRedirectHistory(response) : fetch(request);
       })(),
     );
   } else if (path.startsWith('/assets/')) {
@@ -47,14 +70,16 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         for (const name of (await caches.keys()).filter((name) => name.startsWith(PREFIX))) {
           const response = await (await caches.open(name)).match(path);
-          if (response) return response;
+          if (response) return withoutRedirectHistory(response);
         }
         return fetch(request);
       })(),
     );
   } else if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.open(CACHE).then((cache) => cache.match('/index.html'))),
+      fetch(request).catch(async () =>
+        withoutRedirectHistory(await (await caches.open(CACHE)).match('/index.html')),
+      ),
     );
   }
 });

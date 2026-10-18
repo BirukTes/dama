@@ -1,9 +1,10 @@
 import { chromium, expect } from '@playwright/test';
 import { strict as assert } from 'node:assert';
 import { createServer } from 'node:http';
-import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { execFileSync } from 'node:child_process';
+await mkdir(resolve('.inspection'), { recursive: true });
 const temp = await mkdtemp(resolve('.inspection/offline-'));
 const first = resolve(temp, 'v1'),
   second = resolve(temp, 'v2');
@@ -28,7 +29,19 @@ const types = {
 };
 const server = createServer(async (req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-  const path = resolve(release, '.' + (pathname === '/' ? '/index.html' : pathname));
+  // Cloudflare Pages redirects physical HTML files to canonical public URLs.
+  if (pathname.endsWith('.html')) {
+    res.writeHead(308, { Location: pathname === '/index.html' ? '/' : pathname.slice(0, -5) });
+    res.end();
+    return;
+  }
+  const file =
+    pathname === '/'
+      ? '/index.html'
+      : pathname.startsWith('/install/') && !extname(pathname)
+        ? pathname + '.html'
+        : pathname;
+  const path = resolve(release, '.' + file);
   if (!path.startsWith(release + '/') && !path.startsWith(release + '\\')) {
     res.writeHead(403);
     res.end();
@@ -110,6 +123,15 @@ try {
   const versionOne = await page.evaluate(async () =>
     (await caches.keys()).find((k) => k.startsWith('dama-shell-')),
   );
+  assert.equal(
+    await page.evaluate(async () => {
+      const cache = await caches.open(
+        (await caches.keys()).find((name) => name.startsWith('dama-shell-')),
+      );
+      return (await cache.match('/index.html')).redirected;
+    }),
+    false,
+  );
   await page.locator('#settings .primary').click();
   await context.setOffline(true);
   await page.reload();
@@ -159,7 +181,23 @@ try {
   const icon = await context.newPage();
   await icon.goto(`${base}/install/board-light.html`);
   assert.equal(await icon.locator('h1').textContent(), 'Board · Light');
+  for (const variant of ['board-light', 'board-dark', 'monogram-light', 'monogram-dark']) {
+    await icon.goto(`${base}/install/${variant}`);
+    assert.match(await icon.locator('h1').textContent(), /Board|Monogram/);
+    await icon.reload();
+    assert.match(await icon.locator('h1').textContent(), /Board|Monogram/);
+  }
+  await icon.goto(`${base}/?app-icon=monogram-light`);
+  assert.equal(await icon.locator('html').getAttribute('data-app-icon'), 'monogram-light');
+  await icon.goto(`${base}/index.html`);
+  assert.equal(await icon.locator('#home-screen').isVisible(), true);
   await icon.close();
+  await page.reload();
+  await settings();
+  await page.locator('#icon-settings').evaluate((el) => {
+    el.open = true;
+  });
+  await page.locator('.icon-option:has(input[value="board-light"])').click();
   await page.locator('#settings .primary').click();
   await page.reload();
   assert.equal(await page.locator('html').getAttribute('data-app-icon'), 'board-light');

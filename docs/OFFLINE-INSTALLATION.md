@@ -10,6 +10,10 @@ Choose an icon in **Settings → App icon** before installing. The four static i
 
 Each release has a `dama-shell-<hash>` cache. Downloads use per-file SHA-256 integrity, so a failed download or mismatched deployment cannot install a broken shell. Known release files are served from that cache, including the root page with an icon launch parameter. Cache readiness checks every expected file. **Prepare offline play** downloads missing files again when connected.
 
+Cloudflare Pages redirects physical HTML paths to their canonical URLs (`/index.html` → `/`, `/install/board-light.html` → `/install/board-light`). After integrity verification, followed responses are reconstructed without redirect history before caching; serving also checks for redirected cached responses. Otherwise browsers reject them when reused for navigation. Both HTML and canonical aliases resolve to the same offline entry. The release hash includes the worker source so worker-only fixes receive a separate cache. The offline test server simulates these redirects, rather than serving every physical HTML path directly.
+
+If an older worker already causes `ERR_FAILED` or Safari's “Response served by service worker has redirections”, deploy the fix, close all DA’MA tabs and installed-app windows, then reopen online. The browser can download the new worker during the failed visit; after its old windows close, the waiting worker can activate. Another close/reopen may be needed if the first visit only downloaded the update. On desktop, unregistering this site's worker in developer tools and reloading is a fallback that preserves localStorage; avoid clearing all site data when retaining progress matters.
+
 Game saves remain in their existing localStorage keys. The worker never clears or migrates them. Activation removes only older DA’MA shell caches, retaining the current and previous release; unrelated caches are preserved. Browser data clearing or storage eviction can still remove offline files and/or saves. Reconnect and prepare again if readiness is lost. Export/import is a separate remaining feature.
 
 ## Updates
