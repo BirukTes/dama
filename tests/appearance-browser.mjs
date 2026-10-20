@@ -70,6 +70,14 @@ for (const viewport of [
   { width: 1366, height: 768 },
 ]) {
   await page.setViewportSize(viewport);
+  assert.equal(
+    await page.locator('#home-screen').evaluate((el) => {
+      el.scrollLeft = 100;
+      return el.scrollWidth <= el.clientWidth + 1 && el.scrollLeft === 0;
+    }),
+    true,
+    `Home must not scroll horizontally at ${viewport.width}x${viewport.height}`,
+  );
   await fits(`home ${viewport.width}x${viewport.height}`, [
     '#home-button',
     '#track-select',

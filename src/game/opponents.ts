@@ -5,6 +5,7 @@ export const opponents = [
     symbol: '◇',
     title: 'Find your feet',
     level: 'Welcoming',
+    summary: 'Patient play, room to learn.',
     description: 'A patient introduction. Coral leaves openings while you find your way across.',
     tip: 'Look for a chance to deliver while Coral leaves a route open.',
   },
@@ -14,6 +15,7 @@ export const opponents = [
     symbol: '»',
     title: 'Make every move count',
     level: 'Balanced',
+    summary: 'Quick deliveries. Race or block?',
     description: 'Always looking for the quickest delivery. Decide when to race and when to block.',
     tip: 'Watch the next delivery. Sometimes blocking buys more time than racing.',
   },
@@ -23,6 +25,7 @@ export const opponents = [
     symbol: '▥',
     title: 'Find the opening',
     level: 'Challenging',
+    summary: 'Tight defence. Find another route.',
     description:
       'Guards your exits and limits your choices. Create a second route to break through.',
     tip: 'Keep two routes available. A single threat is easier to shut down.',

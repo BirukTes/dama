@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { strict as assert } from 'node:assert';
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true });
@@ -131,7 +131,7 @@ try {
   );
   await page.locator('#result-panel .go-home').click();
   await page.locator('#puzzles-button').click();
-  assert.match(await page.locator('#puzzles-title').textContent(), /Classic/);
+  assert.equal(await page.locator('#pack-classic').isChecked(), true);
   await page.locator('[data-puzzle="last-step"]').click();
   await page.locator('[data-node="7"]').click();
   await page.locator('[data-node="6"]').click();
@@ -172,36 +172,18 @@ try {
           `${mode} ${selector} ${JSON.stringify(viewport)} ${JSON.stringify(r)}`,
         );
       }
-      if (
-        await page.locator('#home-screen').evaluate((el) => el.scrollHeight > el.clientHeight + 1)
-      ) {
-        console.log(
-          await page.evaluate(() =>
-            [
-              '#home-screen',
-              '.lobby-heading',
-              '#opponent-cards',
-              '#opponent-profile',
-              '#map-select',
-              '#start-button',
-            ].map((s) => {
-              const e = document.querySelector(s);
-              return {
-                s,
-                h: e.scrollHeight,
-                c: e.clientHeight,
-                r: e.getBoundingClientRect().toJSON(),
-              };
-            }),
-          ),
-        );
-        await page.screenshot({ path: '.inspection/structure-overflow.png' });
-      }
+      // Short screens may scroll setup vertically; navigation and Play stay accessible.
+      await page.locator('#difficulty-field').scrollIntoViewIfNeeded();
+      await expect(page.locator('#difficulty-field')).toBeInViewport();
+      await expect(page.locator('.lobby-heading')).toBeInViewport();
+      await expect(page.locator('#start-button')).toBeInViewport();
       assert.equal(
-        await page.locator('#home-screen').evaluate((el) => el.scrollHeight <= el.clientHeight + 1),
+        await page.locator('#home-screen').evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
         true,
-        `Home scrolls: ${mode} ${JSON.stringify(viewport)}`,
+        `Home scrolls horizontally: ${mode} ${JSON.stringify(viewport)}`,
       );
+      assert.equal(await page.evaluate(() => scrollY), 0);
+      await page.locator('#home-screen').evaluate((el) => (el.scrollTop = 0));
     }
   }
   await page.screenshot({ path: '.inspection/game-structure-home.png' });

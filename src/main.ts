@@ -1057,14 +1057,31 @@ function requestHomeMatch(mode: Session['mode']) {
     openDialog('#restart');
   } else startNewMatch(mode);
 }
+function renderRivalInfo(id: OpponentId) {
+  const o = opponentFor(id),
+    map = mapFor(selectedMap()),
+    progress = journeys[map.id],
+    practice = selectedTrack() === 'free-play';
+  const previous = opponents[opponents.findIndex((rival) => rival.id === id) - 1];
+  $('#rival-info-title').textContent = `${o.symbol} ${o.name}`;
+  $('#rival-info-level').textContent = `${o.level} · ${o.title}`;
+  $('#rival-info-description').textContent = o.description;
+  $('#rival-info-record').textContent =
+    !practice && !unlocked(progress, id) && previous
+      ? `Beat ${previous.name} to unlock ${o.name} on ${map.name}.`
+      : practice
+        ? `${map.name} · Free play · No Journey records`
+        : `${map.name} · ${progress.wins[id]} wins · ${progress.losses[id]} losses · ${progress.draws[id]} draws`;
+}
 function renderOpponents() {
   const puzzleMode = selectedTrack() === 'puzzles';
+  $('#home-screen').dataset.mode = selectedTrack();
   $('#puzzle-home').hidden = !puzzleMode;
   $('#opponent-cards').hidden = puzzleMode;
+  $('#rival-heading').hidden = puzzleMode;
   $('.lobby-bottom').hidden = puzzleMode;
   if (puzzleMode) {
-    $('#journey-progress').textContent =
-      `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length} solved across six packs · Separate from Journey.`;
+    $('#mode-description').textContent = 'Find the winning moves.';
     renderPuzzles();
     renderHomeActions();
     return;
@@ -1084,26 +1101,44 @@ function renderOpponents() {
 
   if (!practice && !unlocked(progress, chosenOpponent)) chosenOpponent = 'coral';
   const count = opponents.filter((o) => progress.wins[o.id] > 0).length;
-  const goal = nextChallenge(journeys, map.id);
-  $('#journey-progress').textContent = practice
-    ? `${map.name} · Free play · All rivals available. Results do not affect Journey.`
-    : `${map.name} · ${count} / 3 rivals beaten · ${goal ? `Next: ${goal.map === map.id ? '' : mapFor(goal.map).name + ' · '}${opponentFor(goal.opponent).name}` : 'All six journeys complete!'} · No undo.`;
+  $('#mode-description').textContent = practice
+    ? 'Any rival, or a friend. Your choice.'
+    : 'Beat rivals. Unlock the next challenge.';
+  $('#journey-progress').hidden = practice;
+  $('#journey-progress').textContent = practice ? '' : `${map.name} · ${count} / 3 rivals beaten`;
+  const rivalSummary = $('.rival-summary');
+  rivalSummary.remove();
   $('#opponent-cards').innerHTML = opponents
     .map((o, index) => {
       const available = practice || unlocked(progress, o.id),
         wins = progress.wins[o.id];
-      return `<button class="opponent-card" data-rival="${o.id}" aria-pressed="${chosenOpponent === o.id}" ${available ? '' : 'disabled'}>
+      return `<div class="rival-card-slot ${chosenOpponent === o.id ? 'is-selected' : ''} ${available ? '' : 'is-locked'}"><button class="opponent-card" data-rival="${o.id}" aria-pressed="${chosenOpponent === o.id}" ${available ? '' : 'disabled'}>
       <span class="opponent-symbol rival-${o.id}" aria-hidden="true">${o.symbol}</span><strong>${o.name}</strong><small>${o.level}</small>
-      <span class="rival-progress">${practice ? 'Free play' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Next challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>`;
+      <span class="rival-progress">${practice ? 'Free play' : wins ? `✓ ${wins} ${wins === 1 ? 'win' : 'wins'}` : available ? 'Next challenge' : `Beat ${opponents[index - 1].name} to unlock`}</span></button>${available ? '' : `<button class="rival-unlock quiet" data-locked-rival="${o.id}" aria-label="How to unlock ${o.name}" aria-haspopup="dialog"><svg aria-hidden="true" width="16" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/><path d="M12 14v3"/></svg></button>`}</div>`;
     })
     .join('');
+  $('.rival-card-slot.is-selected').append(rivalSummary);
   const o = opponentFor(chosenOpponent);
+  $('#rival-summary-text').textContent = o.summary;
+  $('#rival-info-button').setAttribute('aria-label', `About ${o.name}`);
   $('#opponent-profile').innerHTML =
     `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${practice ? `${map.name} · Free play · No Journey records` : `${map.name} · ${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws`}</small>`;
   $('#start-button').textContent = `Play ${o.name} →`;
   renderHomeActions();
 }
 $('#opponent-cards').addEventListener('click', (event) => {
+  const lock = (event.target as Element).closest<HTMLButtonElement>('[data-locked-rival]');
+  if (lock) {
+    const id = lock.dataset.lockedRival as OpponentId;
+    renderRivalInfo(id);
+    openDialog('#rival-info');
+    $<HTMLDialogElement>('#rival-info').addEventListener(
+      'close',
+      () => $(`[data-locked-rival="${id}"]`).focus(),
+      { once: true },
+    );
+    return;
+  }
   const card = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-rival]');
   if (!card || card.disabled) return;
   chosenOpponent = card.dataset.rival as OpponentId;
@@ -1182,6 +1217,10 @@ $('#pause-new').addEventListener('click', requestNewMatch);
 initTutorial(() => openDialog('#tutorial'));
 $('#help-button').addEventListener('click', () => openDialog('#help'));
 $('#settings-button').addEventListener('click', () => openDialog('#settings'));
+$('#rival-info-button').addEventListener('click', () => {
+  renderRivalInfo(chosenOpponent);
+  openDialog('#rival-info');
+});
 function requestNewMatch() {
   if (animating) return;
   if (session.puzzleId) {
@@ -1257,9 +1296,6 @@ $('#confirm-new').addEventListener('click', () => startNewMatch(pendingStart));
 function renderPuzzles() {
   const map = mapFor(selectedPack()),
     pack = puzzlesForMap(map.id);
-  $('#puzzles-title').textContent =
-    `${map.name} · ${map.id === 'classic' ? 'First steps' : 'Routes & timing'}`;
-  $('#pack-description').textContent = `${pack.length} challenges · Coral defends.`;
   $('#pack-progress').textContent =
     `${pack.filter((p) => puzzleProgress[p.id]).length} / ${pack.length} solved`;
   const p = savedPuzzle?.puzzleId && puzzleFor(savedPuzzle.puzzleId);
@@ -1274,7 +1310,7 @@ function renderPuzzles() {
         savedPuzzle?.puzzleId === p.id &&
         !puzzleOutcome(savedPuzzle.state, p, savedPuzzle.undo.length);
       const preview = `<svg viewBox="0 0 500 500" aria-hidden="true"><g class="preview-lines">${boardLines(p.map)}</g>${p.board.map((side, n) => `<circle cx="${mapFor(p.map).points[n][0]}" cy="${mapFor(p.map).points[n][1]}" r="${side ? 27 : 10}" class="preview-${side ?? 'empty'}"/>`).join('')}</svg>`;
-      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'In progress →' : 'Play →'}</small></span></button>`;
+      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small class="${!completed && !resume ? 'puzzle-invitation' : ''}">${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'In progress →' : 'Play →'}</small></span></button>`;
     })
     .join('');
 }

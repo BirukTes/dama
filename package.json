@@ -31,7 +31,8 @@
     "test:offline": "node tests/offline-browser.mjs",
     "test:packs": "node tests/map-puzzles-browser.mjs",
     "test:solo": "node tests/solo-improvements-browser.mjs",
-    "test:hierarchy": "node tests/hierarchy-browser.mjs"
+    "test:hierarchy": "node tests/hierarchy-browser.mjs",
+    "test:lobby": "node tests/compact-rivals-browser.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

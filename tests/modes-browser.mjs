@@ -21,6 +21,14 @@ const saved = () => page.evaluate(() => localStorage.getItem('dama-session-v1'))
 async function fits() {
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
+    assert.equal(
+      await page.locator('#home-screen').evaluate((el) => {
+        el.scrollLeft = 100;
+        return el.scrollWidth <= el.clientWidth + 1 && el.scrollLeft === 0;
+      }),
+      true,
+      `Puzzle home must not scroll horizontally at ${JSON.stringify(viewport)}`,
+    );
     for (const selector of [
       '#track-select',
       '#puzzles-title',

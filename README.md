@@ -41,6 +41,7 @@ npm.cmd run test:offline
 npm.cmd run test:solo
 npm.cmd run test:packs
 npm.cmd run test:hierarchy
+npm.cmd run test:lobby
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles

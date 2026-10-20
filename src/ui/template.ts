@@ -21,6 +21,11 @@ export const boardNodes = (id: MapId = 'classic') =>
     )
     .join('');
 
+const mapIcon = (id: MapId) => {
+  const map = mapFor(id);
+  return `<svg class="map-icon${map.wide ? ' map-icon-wide' : ''}" aria-hidden="true" viewBox="50 50 400 400" fill="none" preserveAspectRatio="none"><g stroke="currentColor" stroke-width="16" stroke-linecap="round">${boardLines(id)}</g><g fill="currentColor">${map.points.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="20"/>`).join('')}</g></svg>`;
+};
+
 export const template = /* HTML */ `
   <header class="masthead">
     <button class="wordmark" id="home-button" aria-label="DA’MA home">
@@ -40,8 +45,7 @@ export const template = /* HTML */ `
     <section class="play-lobby" aria-labelledby="lobby-title">
       <div class="lobby-heading">
         <div>
-          <p class="eyebrow">THREE PAWNS. FIND YOUR WAY ACROSS.</p>
-          <h1 id="lobby-title" class="sr-only">Choose how to play</h1>
+          <h1 id="lobby-title" class="section-label">Choose how to play</h1>
           <div class="view-switch" id="track-select" role="radiogroup" aria-label="Play mode">
             <label>
               <input
@@ -82,34 +86,48 @@ export const template = /* HTML */ `
           <small id="continue-context"></small>
         </button>
       </div>
-      <p class="journey-summary" id="journey-progress"></p>
+      <p class="mode-description" id="mode-description" aria-live="polite"></p>
       <section id="puzzle-home" aria-labelledby="puzzles-title" hidden>
+        <div class="puzzle-pack-heading">
+          <h2 class="section-label" id="puzzles-title"><span id="pack-label">Puzzle pack</span></h2>
+          <div class="puzzle-pack-actions">
+            <p id="pack-progress" aria-live="polite"></p>
+            <button class="quiet" id="resume-puzzle" hidden></button>
+          </div>
+        </div>
         <div
           class="view-switch"
           id="puzzle-pack-select"
           role="radiogroup"
           aria-label="Puzzle map pack"
+          aria-labelledby="pack-label"
         >
           ${Object.values(maps)
             .map(
               (m) =>
-                `<label><input class="sr-only" type="radio" name="puzzle-pack" id="pack-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span>${m.name}</span></label>`,
+                `<label><input class="sr-only" type="radio" name="puzzle-pack" id="pack-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span class="map-option">${mapIcon(m.id)}<b class="map-option-copy">${m.name}</b></span></label>`,
             )
             .join('')}
         </div>
-        <div class="puzzle-pack-heading">
-          <div>
-            <h2 id="puzzles-title">Classic · First steps</h2>
-            <p id="pack-description">Short challenges. Play Blue; Coral defends.</p>
-          </div>
-          <div class="puzzle-pack-actions">
-            <p id="pack-progress"></p>
-            <button class="quiet" id="resume-puzzle" hidden></button>
-          </div>
-        </div>
-        <div id="puzzle-list" class="puzzle-list"></div>
+        <p class="section-label" id="puzzle-choice-label">Choose a puzzle</p>
+        <div
+          id="puzzle-list"
+          class="puzzle-list"
+          tabindex="0"
+          role="group"
+          aria-labelledby="puzzle-choice-label"
+        ></div>
       </section>
-      <div class="opponent-cards" id="opponent-cards" aria-label="Choose an opponent"></div>
+      <div class="rival-heading" id="rival-heading">
+        <h2 class="section-label" id="rival-choice-label">Choose a rival</h2>
+        <p class="journey-summary" id="journey-progress"></p>
+      </div>
+      <div
+        class="opponent-cards"
+        id="opponent-cards"
+        role="group"
+        aria-labelledby="rival-choice-label"
+      ></div>
       <div class="lobby-bottom">
         <section
           class="opponent-profile"
@@ -117,23 +135,56 @@ export const template = /* HTML */ `
           aria-live="polite"
           aria-atomic="true"
         ></section>
-        <div class="lobby-controls">
+        <div class="rival-summary">
+          <p id="rival-summary-text" aria-live="polite" aria-atomic="true"></p>
+          <button
+            class="quiet"
+            id="rival-info-button"
+            aria-label="About Coral"
+            aria-haspopup="dialog"
+          >
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v6" />
+              <circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" />
+            </svg>
+          </button>
+        </div>
+        <div class="lobby-controls" role="group" aria-label="Match settings">
           <div class="field" id="map-field">
-            <div class="view-switch" id="map-select" role="radiogroup" aria-label="Board map">
+            <p class="section-label" id="board-choice-label">Board</p>
+            <div
+              class="view-switch"
+              id="map-select"
+              role="radiogroup"
+              aria-label="Board map"
+              aria-labelledby="board-choice-label"
+            >
               ${Object.values(maps)
                 .map(
                   (m) =>
-                    `<label><input class="sr-only" type="radio" name="board-map" id="map-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span>${m.name}<small data-map-progress="${m.id}"></small></span></label>`,
+                    `<label><input class="sr-only" type="radio" name="board-map" id="map-${m.id}" value="${m.id}" ${m.id === 'classic' ? 'checked' : ''}/><span class="map-option">${mapIcon(m.id)}<b class="map-option-copy">${m.name}<small data-map-progress="${m.id}"></small></b></span></label>`,
                 )
                 .join('')}
             </div>
           </div>
           <div class="field" id="difficulty-field">
+            <p class="section-label" id="difficulty-choice-label">Difficulty</p>
             <div
-              class="view-switch"
+              class="difficulty-radios"
               id="difficulty-select"
               role="radiogroup"
               aria-label="Challenge setting"
+              aria-labelledby="difficulty-choice-label"
             >
               <label>
                 <input
@@ -307,6 +358,19 @@ export const template = /* HTML */ `
       <button class="quiet" id="practice-rival" hidden>Practice this rival · with undo</button>
       <button class="quiet go-home">Home</button>
     </div>
+  </dialog>
+  <dialog
+    id="rival-info"
+    aria-labelledby="rival-info-title"
+    aria-describedby="rival-info-description"
+  >
+    <div class="dialog-top">
+      <h2 id="rival-info-title">Coral</h2>
+      <button class="close quiet" aria-label="Close rival details">✕</button>
+    </div>
+    <p class="eyebrow" id="rival-info-level"></p>
+    <p id="rival-info-description"></p>
+    <p class="dialog-note" id="rival-info-record"></p>
   </dialog>
   <dialog id="pause" aria-labelledby="pause-title">
     <div class="dialog-top">
