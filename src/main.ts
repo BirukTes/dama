@@ -30,6 +30,7 @@ import { initPwa } from './pwa/client';
 import { initBackup } from './ui/backup';
 import { achievements } from './game/achievements';
 import { renderAchievements } from './ui/achievements';
+import { initHomeActions } from './ui/home-actions';
 import { createMatchId } from './persistence/match-id';
 import { puzzles, puzzlesForMap, puzzleFor, puzzleState, puzzleOutcome } from './game/puzzles';
 import { puzzleSolver, choosePuzzleReply } from './game/puzzle-solver';
@@ -102,6 +103,10 @@ let lastMove: Move | null = null;
 let passedSide: Side | null = null;
 let passUntil = 0;
 let resultDismissed = false;
+let resultRevealAt = 0;
+let resultTimer: ReturnType<typeof setTimeout> | null = null;
+let moveFeedback = '';
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 let returnToPause = false;
 let hasGame = !!restored;
 let screen: 'home' | 'play' = 'home';
@@ -376,6 +381,21 @@ function render() {
   );
   $<HTMLButtonElement>('#play-again').disabled = animating;
   const moves = legalMoves(s).filter((m) => m.from === selected);
+  let connections = $('#board svg').querySelector<SVGGElement>('#legal-connections');
+  if (!connections) {
+    connections = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    connections.id = 'legal-connections';
+    $('#board svg').append(connections);
+  }
+  connections.innerHTML =
+    selected === null
+      ? ''
+      : moves
+          .map(
+            (m) =>
+              `<line class="legal-connection" x1="${map.points[m.from][0]}" y1="${map.points[m.from][1]}" x2="${map.points[m.to][0]}" y2="${map.points[m.to][1]}"/>`,
+          )
+          .join('');
   $('#mode-label').textContent = puzzle
     ? `${map.name.toUpperCase()} · PUZZLE ${puzzlesForMap(map.id).indexOf(puzzle) + 1} · ${puzzle.title.toUpperCase()}`
     : session.mode === 'solo'
@@ -413,7 +433,9 @@ function render() {
   let instruction =
     selected === null
       ? 'Drag a pawn, or tap one to see its possible moves.'
-      : 'Choose a highlighted spot. Select the pawn again to cancel.';
+      : moves.length
+        ? 'Choose a highlighted spot. Select the pawn again to cancel.'
+        : 'This pawn has no open connections. Choose another pawn.';
   if (thinking) {
     status = `${names.coral} is thinking`;
     instruction = opponent.tip;
@@ -521,11 +543,21 @@ function render() {
       !animating &&
       !resultDismissed &&
       !document.querySelector('dialog[open]')
-    )
-      resultPanel.showModal();
+    ) {
+      if (performance.now() < resultRevealAt) {
+        if (!resultTimer)
+          resultTimer = setTimeout(() => {
+            resultTimer = null;
+            render();
+          }, resultRevealAt - performance.now());
+      } else resultPanel.showModal();
+    }
   }
   $('#status').textContent = status;
-  $('#instruction').textContent = instruction;
+  $('#instruction').textContent = moveFeedback && !ended && !thinking ? moveFeedback : instruction;
+  $('#instruction').classList.toggle('move-feedback', !!moveFeedback && !ended && !thinking);
+  $('#move-notice').hidden = !moveFeedback || ended || thinking || !!passedSide;
+  $('#move-notice').textContent = moveFeedback;
   $('#undo-button').hidden = ended || !allowsUndo(session);
   $('#match-rules').textContent = isJourney(session)
     ? 'Journey · No undo. Win to unlock the next rival. Your existing unlocks are kept.'
@@ -536,7 +568,25 @@ function render() {
   $<HTMLButtonElement>('#undo-button').disabled =
     !allowsUndo(session) || ended || session.undo.length === 0 || thinking || animating;
   $('#move-count').textContent = `TURN ${s.turns + Number(!s.result)}`;
-  $('#save-status').textContent = storageAvailable ? 'SAVED ON THIS DEVICE' : 'SAVING UNAVAILABLE';
+  $('#save-status').textContent = storageAvailable
+    ? 'SAVED ON THIS DEVICE'
+    : 'CAN’T SAVE · KEEP THIS TAB OPEN';
+  $('#pause-save-note').textContent = storageAvailable
+    ? 'Your match is saved on this browser. Pick up where you left off.'
+    : 'Saving is unavailable. Keep this tab open; reloading may lose this match.';
+  $('#result-save-note').textContent = storageAvailable
+    ? 'Progress saved on this browser.'
+    : 'Progress could not be saved. Keep this tab open.';
+  const nextResult = !$('#next-opponent').hidden || !$('#next-puzzle').hidden;
+  $('#play-again').classList.toggle('primary', !nextResult);
+  $('#play-again').classList.toggle('quiet', nextResult);
+  resultPanel.dataset.outcome = puzzle
+    ? (outcome ?? '')
+    : s.result && 'winner' in s.result
+      ? s.result.winner === 'blue'
+        ? 'win'
+        : 'loss'
+      : 'draw';
   const goals = achievements(journeys, puzzleProgress);
   for (const goal of goals)
     if (goal.earned && !knownAchievements.has(goal.id)) {
@@ -549,6 +599,64 @@ function render() {
     `Goal reached: ${newAchievements.join(' · ')}. See Optional goals in Settings.`;
   offlineControls?.refresh();
   backupControls?.refresh();
+  renderHomeActions();
+}
+function renderHomeActions() {
+  const mobile = document.body.classList.contains('home-docked'),
+    puzzleMode = selectedTrack() === 'puzzles';
+  const running = hasGame && !finished();
+  const p = savedPuzzle?.puzzleId ? puzzleFor(savedPuzzle.puzzleId) : undefined;
+  const resume = !!p && !puzzleOutcome(savedPuzzle!.state, p, savedPuzzle!.undo.length);
+  $('#resume-puzzle').hidden = !puzzleMode || !resume;
+  $('#resume-puzzle').textContent = p
+    ? mobile
+      ? (p.map ?? 'classic') === selectedPack()
+        ? 'Continue puzzle →'
+        : `Resume ${mapFor(p.map).name} puzzle →`
+      : `Continue · ${mapFor(p.map).name} · ${p.title} →`
+    : '';
+  const pack = puzzlesForMap(selectedPack()),
+    nextPuzzle = pack.find((p) => !puzzleProgress[p.id]) ?? pack[0];
+  const primary = puzzleMode
+    ? resume && (p!.map ?? 'classic') === selectedPack()
+      ? 'resume-puzzle'
+      : 'pack-start'
+    : running
+      ? 'continue-button'
+      : 'start-button';
+  $('#home-actions').hidden = !mobile || screen !== 'home';
+  $('#start-button').hidden = puzzleMode;
+  $('#local-button').hidden = mobile && puzzleMode;
+  $('#pack-start').hidden = !mobile || !puzzleMode || primary === 'resume-puzzle';
+  $('#pack-start').textContent =
+    `${pack.every((p) => puzzleProgress[p.id]) ? 'Replay' : 'Play'} ${nextPuzzle.title} →`;
+  for (const id of ['start-button', 'continue-button', 'resume-puzzle', 'pack-start']) {
+    const strong = id === primary;
+    $(`#${id}`).classList.toggle('primary', strong);
+    $(`#${id}`).classList.toggle('quiet', !strong);
+    $(`#${id}`).classList.toggle('home-main-action', strong);
+  }
+  if (mobile) {
+    const dock = $('#home-actions'),
+      button = $(`#${primary}`);
+    if (dock.querySelector('button:not([hidden])') !== button) {
+      const active = document.activeElement;
+      dock.insertBefore(button, dock.querySelector('button'));
+      if (active === button && button.getClientRects().length)
+        button.focus({ preventScroll: true });
+    }
+  }
+  if (!puzzleMode) {
+    const o = opponentFor(chosenOpponent);
+    $('#start-button').textContent = `${mobile && running ? 'New match ·' : 'Play'} ${o.name} →`;
+  }
+  $('#home-action-context').textContent = puzzleMode
+    ? primary === 'resume-puzzle'
+      ? `Saved puzzle · ${mapFor(p!.map).name} · ${p!.title}`
+      : `${mapFor(selectedPack()).name} · ${pack.length} puzzles · Play Blue`
+    : running
+      ? `Saved ${isJourney(session) ? 'Journey' : session.mode === 'local' ? 'friend match' : 'Free play'} · ${mapFor(session.state.map).name}${session.mode === 'solo' ? ` · ${opponentFor(session.opponent).name}` : ''}`
+      : `${mapFor(selectedMap()).name} · ${selectedDifficulty() === 'gentle' ? 'Gentle' : 'Standard'} · ${selectedTrack() === 'journey' ? 'Journey' : 'Free play'}`;
 }
 function cancelComputer() {
   if (timer) clearTimeout(timer);
@@ -631,11 +739,31 @@ function playSound(delivered: boolean) {
     /* Sound never blocks a move. */
   }
 }
+function clearMoveFeedback() {
+  if (feedbackTimer) clearTimeout(feedbackTimer);
+  feedbackTimer = null;
+  moveFeedback = '';
+}
 function clearDelivery() {
   if (noticeTimer) clearTimeout(noticeTimer);
   noticeTimer = null;
   deliveryNotice = '';
   pendingDelivery = null;
+  if (resultTimer) clearTimeout(resultTimer);
+  resultTimer = null;
+  resultRevealAt = 0;
+  clearMoveFeedback();
+}
+function showMoveFeedback(message: string) {
+  if (feedbackTimer) clearTimeout(feedbackTimer);
+  moveFeedback = message;
+  announce(message);
+  render();
+  feedbackTimer = setTimeout(() => {
+    moveFeedback = '';
+    feedbackTimer = null;
+    render();
+  }, 1800);
 }
 function showDelivery(side: Side) {
   if (noticeTimer) clearTimeout(noticeTimer);
@@ -733,6 +861,7 @@ async function commit(move: Move, human: boolean, origin?: { x: number; y: numbe
     passUntil = performance.now() + 1800;
   }
   playSound(delivered);
+  if (finished() && !reduced) resultRevealAt = performance.now() + 550;
   render();
   const ended = finished();
   announce(
@@ -752,13 +881,18 @@ const cancelDrag = enableDragging($('#board'), {
   moves: (n) => legalMoves(session.state).filter((m) => m.from === n),
   side: () => session.state.turn,
   select: (n) => {
+    clearMoveFeedback();
     selected = n;
     render();
   },
   commit: (move, origin) => {
     void commit(move, true, origin);
   },
-  announce,
+  announce: (message) => {
+    if (message.startsWith('That destination'))
+      showMoveFeedback('That spot is unavailable. Your pawn returned; your turn is unchanged.');
+    else announce(message);
+  },
 });
 updateSettings();
 $('#board').addEventListener('click', (event) => {
@@ -773,13 +907,21 @@ $('#board').addEventListener('click', (event) => {
     return;
   const n = Number(button.dataset.node);
   if (session.state.board[n] === session.state.turn) {
+    clearMoveFeedback();
     selected = selected === n ? null : n;
-    render();
+    if (selected !== null && !legalMoves(session.state).some((m) => m.from === selected))
+      showMoveFeedback('This pawn has no open connections. Choose another pawn.');
+    else render();
     return;
   }
   if (selected !== null && legalMoves(session.state).some((m) => m.from === selected && m.to === n))
     void commit({ from: selected, to: n }, true);
-  else announce('Select one of your pawns, then a highlighted empty spot.');
+  else
+    showMoveFeedback(
+      selected === null
+        ? 'Choose one of your pawns first.'
+        : 'Follow a highlighted connection to an empty spot. Your turn is unchanged.',
+    );
 });
 $('#board').addEventListener('keydown', (event) => {
   const e = event as KeyboardEvent,
@@ -787,6 +929,7 @@ $('#board').addEventListener('keydown', (event) => {
   if (!button) return;
   const n = Number(button.dataset.node);
   if (e.key === 'Escape') {
+    clearMoveFeedback();
     e.preventDefault();
     e.stopPropagation();
     if (selected !== null) {
@@ -810,6 +953,7 @@ $('#board').addEventListener('focusin', (event) => {
 });
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && screen === 'play' && !document.querySelector('dialog[open]')) {
+    clearMoveFeedback();
     event.preventDefault();
     if (selected !== null) {
       selected = null;
@@ -843,6 +987,9 @@ function openDialog(id: string) {
 }
 function setScreen(next: 'home' | 'play') {
   if (animating) return;
+  if (resultTimer) clearTimeout(resultTimer);
+  resultTimer = null;
+  resultRevealAt = 0;
   cancelComputer();
   cancelDrag();
   if (next === 'home') releaseFocus();
@@ -919,6 +1066,7 @@ function renderOpponents() {
     $('#journey-progress').textContent =
       `Puzzles · ${Object.keys(puzzleProgress).length} / ${puzzles.length} solved across six packs · Separate from Journey.`;
     renderPuzzles();
+    renderHomeActions();
     return;
   }
   const map = mapFor(selectedMap());
@@ -953,6 +1101,7 @@ function renderOpponents() {
   $('#opponent-profile').innerHTML =
     `<p class="eyebrow">${o.symbol} ${o.name.toUpperCase()} · ${o.title.toUpperCase()}</p><p>${o.description}</p><small>${practice ? `${map.name} · Free play · No Journey records` : `${map.name} · ${progress.wins[o.id]} wins · ${progress.losses[o.id]} losses · ${progress.draws[o.id]} draws`}</small>`;
   $('#start-button').textContent = `Play ${o.name} →`;
+  renderHomeActions();
 }
 $('#opponent-cards').addEventListener('click', (event) => {
   const card = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-rival]');
@@ -1006,6 +1155,11 @@ $('#local-button').addEventListener('click', () => {
   requestHomeMatch('local');
 });
 $('#start-button').addEventListener('click', () => requestHomeMatch('solo'));
+$('#pack-start').addEventListener('click', () => {
+  const pack = puzzlesForMap(selectedPack());
+  const next = pack.find((p) => !puzzleProgress[p.id]) ?? pack[0];
+  startPuzzle(next.id);
+});
 $('#continue-button').addEventListener('click', () => {
   resultDismissed = false;
   setScreen('play');
@@ -1064,6 +1218,7 @@ document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => {
       openDialog('#pause');
       return;
     }
+    if (finished() && !resultDismissed && !document.querySelector('dialog[open]')) render();
     scheduleComputer();
   });
 });
@@ -1104,8 +1259,7 @@ function renderPuzzles() {
     pack = puzzlesForMap(map.id);
   $('#puzzles-title').textContent =
     `${map.name} · ${map.id === 'classic' ? 'First steps' : 'Routes & timing'}`;
-  $('#pack-description').textContent =
-    `${pack.length} challenges, one to ${Math.max(...pack.map((p) => p.moves))} moves. Play Blue; Coral defends.`;
+  $('#pack-description').textContent = `${pack.length} challenges · Coral defends.`;
   $('#pack-progress').textContent =
     `${pack.filter((p) => puzzleProgress[p.id]).length} / ${pack.length} solved`;
   const p = savedPuzzle?.puzzleId && puzzleFor(savedPuzzle.puzzleId);
@@ -1120,7 +1274,7 @@ function renderPuzzles() {
         savedPuzzle?.puzzleId === p.id &&
         !puzzleOutcome(savedPuzzle.state, p, savedPuzzle.undo.length);
       const preview = `<svg viewBox="0 0 500 500" aria-hidden="true"><g class="preview-lines">${boardLines(p.map)}</g>${p.board.map((side, n) => `<circle cx="${mapFor(p.map).points[n][0]}" cy="${mapFor(p.map).points[n][1]}" r="${side ? 27 : 10}" class="preview-${side ?? 'empty'}"/>`).join('')}</svg>`;
-      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'Continue your saved attempt →' : 'Try this puzzle →'}</small></span></button>`;
+      return `<button class="puzzle-card" data-puzzle="${p.id}">${preview}<span><strong>${index + 1}. ${p.title}</strong><small>Win in ${p.moves} ${p.moves === 1 ? 'move' : 'moves'}</small><small>${completed ? `✓ Solved ${completed.unassisted ? 'without hints' : 'with a hint'} · best ${completed.bestMoves}` : resume ? 'In progress →' : 'Play →'}</small></span></button>`;
     })
     .join('');
 }
@@ -1131,6 +1285,7 @@ $('#puzzle-pack-select').addEventListener('change', () => {
     /* Pack selection remains available. */
   }
   renderPuzzles();
+  renderHomeActions();
 });
 function startPuzzle(id: string, retry = false) {
   if (animating) return;
@@ -1226,6 +1381,7 @@ backupControls = initBackup({
     location.reload();
   },
 });
+initHomeActions(renderHomeActions);
 offlineControls = initPwa({
   canUpdate: () => screen === 'home' && !animating,
   save: () => {

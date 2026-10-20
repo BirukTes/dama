@@ -167,6 +167,16 @@ export const template = /* HTML */ `
       </div>
     </section>
   </main>
+  <div
+    id="home-actions"
+    class="home-action-bar"
+    role="region"
+    aria-label="Start or continue playing"
+    hidden
+  >
+    <p id="home-action-context"></p>
+    <button class="primary" id="pack-start">Play first puzzle →</button>
+  </div>
   <main id="play-screen" aria-label="Play" hidden>
     <section class="game" aria-label="DA’MA game">
       <div class="game-top">
@@ -219,6 +229,7 @@ export const template = /* HTML */ `
       </div>
       <p class="pass-notice" id="pass-notice" hidden></p>
       <p class="delivery-notice" id="delivery-notice" hidden></p>
+      <p class="move-notice" id="move-notice" aria-hidden="true" hidden></p>
       <div class="board-shell">
         <span class="board-map-label" id="board-map-label">Classic</span>
         <div class="goal-edge coral-edge" aria-hidden="true"></div>
@@ -288,6 +299,7 @@ export const template = /* HTML */ `
     <p class="final-score" id="final-score"></p>
     <p class="dialog-note" id="journey-result" hidden></p>
     <p class="dialog-note" id="achievement-notice" hidden></p>
+    <p class="result-save-note" id="result-save-note"></p>
     <div class="dialog-actions">
       <button class="primary" id="next-opponent" hidden>Next challenge →</button>
       <button class="primary" id="next-puzzle" hidden>Next puzzle →</button>
@@ -302,7 +314,7 @@ export const template = /* HTML */ `
       <button class="quiet close" aria-label="Close pause menu">Close ×</button>
     </div>
     <h2 id="pause-title">Take your time.</h2>
-    <p class="dialog-note">Your match is saved. Pick up where you left off.</p>
+    <p class="dialog-note" id="pause-save-note">Your match is saved. Pick up where you left off.</p>
     <p class="dialog-note" id="match-rules"></p>
     <div class="pause-actions">
       <button class="primary close">Resume play →</button>

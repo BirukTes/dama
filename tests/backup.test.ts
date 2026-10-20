@@ -72,3 +72,10 @@ it('rolls back earlier writes if storage rejects a later write', () => {
   expect(() => restoreBackup(b, s)).toThrow('previous data was kept');
   expect([...s.values]).toEqual(before);
 });
+it('explains how to recover a newer backup without exposing internal storage keys', () => {
+  const b = createBackup(storage());
+  expect(() => parseBackup(JSON.stringify({ ...b, version: 2 }))).toThrow('Update the app');
+  expect(() => parseBackup(JSON.stringify({ ...b, entries: { 'dama-session-v1': '{}' } }))).toThrow(
+    'Your current data is unchanged',
+  );
+});

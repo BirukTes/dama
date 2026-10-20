@@ -79,6 +79,15 @@ export function parseBackup(text: string): Backup {
     throw new Error('This is not a readable JSON backup.');
   }
   if (
+    object(data) &&
+    data.format === 'dama-backup' &&
+    typeof data.version === 'number' &&
+    data.version > 1
+  )
+    throw new Error(
+      'This backup was made with a newer version of DA’MA. Update the app, then try again. Your current data is unchanged.',
+    );
+  if (
     !object(data) ||
     data.format !== 'dama-backup' ||
     data.version !== 1 ||
@@ -97,7 +106,7 @@ export function parseBackup(text: string): Backup {
     }
     if (!valid)
       throw new Error(
-        `The backup contains invalid or unsupported data (${key.slice(0, 80)}). Nothing was restored.`,
+        'This backup contains damaged or unsupported game data. Choose another backup or update DA’MA, then try again. Your current data is unchanged.',
       );
   }
   return data as unknown as Backup;

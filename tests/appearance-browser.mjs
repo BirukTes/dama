@@ -75,13 +75,19 @@ for (const viewport of [
     '#track-select',
     '#lobby-title',
     '#opponent-cards',
-    '#opponent-profile',
     '#settings-button',
     '#continue-button',
     '#start-button',
     '#local-button',
     '#help-button',
   ]);
+  if (await page.locator('#opponent-profile').isVisible())
+    await fits(`profile ${viewport.width}x${viewport.height}`, ['#opponent-profile']);
+  if (await page.locator('#home-actions').isVisible())
+    await fits(`primary action ${viewport.width}x${viewport.height}`, [
+      '#home-actions',
+      '.home-main-action:visible',
+    ]);
   // The segments themselves must fit the border, not merely the outer control.
   for (const selector of ['#difficulty-select', '#map-select', '#track-select']) {
     const control = await page.locator(selector).boundingBox();

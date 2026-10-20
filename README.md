@@ -40,6 +40,7 @@ npm.cmd run test:icons
 npm.cmd run test:offline
 npm.cmd run test:solo
 npm.cmd run test:packs
+npm.cmd run test:hierarchy
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
@@ -83,6 +84,8 @@ Hints give a clue and a verified next move in a dialog. Completion records disti
 See [puzzle and rival verification notes](docs/PUZZLES-AND-RIVALS.md) for goals, proof scope, benchmark method, and limitations.
 
 ## Interface and saves
+
+Mobile Home has a bottom Play/Continue action bar with quieter setup choices and independent puzzle resume/start actions. See [play hierarchy and interaction polish](docs/INTERACTION-POLISH.md) for feedback, reduced-motion behaviour and reviewed recovery states.
 
 - Home shows opponent cards, the selected rival's profile, a remembered challenge setting, and a direct Play button. Local play starts directly; replacing an unfinished match requires confirmation. Rules and Settings stay in the compact header.
 - Pause, rules, settings, restart, and results use accessible dialogs. Result review and passed-turn notices keep the board in place.
