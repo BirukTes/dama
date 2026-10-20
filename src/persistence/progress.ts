@@ -8,6 +8,7 @@ const storageKey = (map: MapId) =>
 export const isJourney = (s: Session) =>
   s.mode === 'solo' &&
   !s.puzzleId &&
+  !s.state.retreats &&
   (s.track === 'journey' || (s.track === undefined && (s.state.map ?? 'classic') === 'classic'));
 export const allowsUndo = (s: Session) => !isJourney(s);
 export function nextChallenge(journeys: Record<MapId, Progress>, preferred: MapId) {

@@ -1,6 +1,6 @@
 # Board maps
 
-Choose a map on Home, then a rival or a friend. Journey mode gives every map its own Coral → Runner → Guardian progression. All maps are available from the start. Free play makes every rival available and excludes its results from Journey records. Changing the choice only affects a new match. An unfinished match requires confirmation before replacement. Rematches retain the map and alternate starters. Puzzles remain Classic.
+Choose a map on Home, then a rival or a friend. Journey mode gives every map its own Coral → Runner → Guardian progression. All maps are available from the start. Free play makes every rival available and excludes its results from Journey records. Changing the choice only affects a new match. An unfinished match requires confirmation before replacement. Rematches retain the map and alternate starters. Each board has its own puzzle pack.
 
 Every map has three pawns per side. Blue starts on the right and delivers to any of the three left-edge goals; the rival does the reverse. Follow one visible connection per turn. Deliveries remove pawns, backwards moves are legal, blocked turns pass, and repetition/100-turn draws still apply. Larger boards add manoeuvring space rather than extra pawns.
 
@@ -12,16 +12,21 @@ Every map has three pawns per side. Blue starts on the right and delivers to any
 | Twin Bridges  |    12 |          16 | Three rows, four columns, with the central horizontal link removed. Cross between banks on the top or bottom bridge.                          |
 | Long Crossing |    15 |          22 | Three rows, five columns, with full orthogonal connections. More staging space and a longer delivery route.                                   |
 | Islands       |     9 |          11 | Two three-spot banks, two landings and a passing bay. Each landing reaches its bank's upper/lower spot. The landings and bay form a triangle. |
+| Diamond       |     9 |          20 | Classic plus four outer-middle bypasses. Unmarked line crossings are not junctions.                                                           |
+| Weave         |    12 |          23 | Three lanes and four columns with six alternating diagonal connections.                                                                       |
+| Switchyard    |    11 |          22 | Two junctions link upper, middle and lower approaches.                                                                                        |
+
+Free play optionally limits each side to one backward move per match. Journey and puzzle packs remain unrestricted; see [expanded boards and movement](EXPANDED-BOARDS.md).
 
 Islands adds a passing bay to the earlier single-bridge sketch. It lets pawns move aside when opponents meet on the crossing. Blocking and retreating remain possible; the bay does not guarantee a decisive game.
 
-Rendering, drag targets, spatial keyboard navigation, delivery animation, AI distances/threats, undo, rematches, saves and goal detection all use the selected map. Wider maps keep enough horizontal room for distinct touch targets in portrait, including Focus with the rotation hint visible. Home keeps all six choices visible using radio buttons.
+Rendering, drag targets, spatial keyboard navigation, delivery animation, AI distances/threats, undo, rematches, saves and goal detection all use the selected map. Wider maps keep enough horizontal room for distinct touch targets in portrait, including Focus with the rotation hint visible. Home keeps all nine choices visible using radio buttons.
 
 ## Validation
 
 Full-rule breadth-first checks find a reachable win for **both colours from the starting position on every map**, with actual repetition history and turn limits. Seeded games cover all three rivals and both starters, check every computer move for legality, and validate every saved state through termination. Saves reject wrong lengths and mixed-map histories/undo. Existing Classic puzzle proofs still pass.
 
-Baseline graph analysis (`npm.cmd run analyze -- <map-id>`) gives:
+Baseline graph analysis (`npm.cmd run analyze -- <map-id>`) for the original six maps gives:
 
 | Map ID        | Reachable positions | Winning terminal positions | Mutual-blocking terminals | Pass transitions | Perfect baseline start, either colour |
 | ------------- | ------------------: | -------------------------: | ------------------------: | ---------------: | ------------------------------------- |
@@ -34,6 +39,6 @@ Baseline graph analysis (`npm.cmd run analyze -- <map-id>`) gives:
 
 The baseline omits repetition history and turn limits, classifying indefinite cycles as draws. These results establish graph reachability, not human difficulty or replay quality. A perfect baseline draw is also the case for Classic. Alternative-map rival strength remains provisional; playtest queueing, repetitive defence, match length and Guardian response time on physical phones. Journey progression is available on every map; it does not establish equal difficulty across maps.
 
-`npm.cmd run test:maps` checks the original Crossroads flow and all four additions in Edge: direct dragging, a real Guardian worker reply, undo/reload, complete local games, map choice containment, and separate touch targets in Standard/Focus at 320×568, 390×844, 761×752, 844×390 and 1366×768. General appearance, journey, audio and puzzle suites cover regressions. Browser emulation does not replace Safari and physical-device testing.
+`npm.cmd run test:maps` checks the original Crossroads flow and the other seven alternative maps in Edge: direct dragging, a real Guardian worker reply, undo/reload, complete local games, map choice containment, and separate touch targets in Standard/Focus at 320×568, 390×844, 761×752, 844×390 and 1366×768. General appearance, journey, audio and puzzle suites cover regressions. Browser emulation does not replace Safari and physical-device testing.
 
 Tutorial, offline installation and introductory map-specific puzzle packs have since been implemented; see [interactive help](INTERACTIVE-HELP.md), [offline installation](OFFLINE-INSTALLATION.md) and [map packs](MAP-PUZZLES.md). Deployment of the latest solo enhancements, deeper puzzle content, human difficulty calibration and physical-device checks remain follow-ups.

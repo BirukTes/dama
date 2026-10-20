@@ -207,8 +207,52 @@ export const template = /* HTML */ `
                 />
                 <span>Standard</span>
               </label>
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="challenge"
+                  id="difficulty-expert"
+                  value="expert"
+                />
+                <span>Expert</span>
+              </label>
             </div>
           </div>
+          <div class="field" id="movement-field" hidden>
+            <p class="section-label" id="movement-choice-label">Movement</p>
+            <div
+              class="difficulty-radios"
+              id="movement-select"
+              role="radiogroup"
+              aria-labelledby="movement-choice-label"
+            >
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="movement"
+                  id="movement-classic"
+                  value="classic"
+                  checked
+                />
+                <span>Classic</span>
+              </label>
+              <label>
+                <input
+                  class="sr-only"
+                  type="radio"
+                  name="movement"
+                  id="movement-one-retreat"
+                  value="one-retreat"
+                />
+                <span>One retreat</span>
+              </label>
+            </div>
+          </div>
+          <p id="movement-note" class="movement-note" hidden>
+            One backward move per side, shared by all three pawns. Vertical moves are unlimited.
+          </p>
           <button class="primary" id="start-button">Play Coral →</button>
           <button class="quiet" id="local-button">
             Play with a friend
@@ -266,6 +310,7 @@ export const template = /* HTML */ `
           <div class="score-track">
             <div class="deliveries" id="coral-score" aria-label="Coral delivered"></div>
             <span class="score-count" id="coral-count"></span>
+            <span class="retreat-count" id="coral-retreat" hidden></span>
           </div>
           <span class="direction">CROSS TO THE RIGHT →</span>
         </div>
@@ -274,6 +319,7 @@ export const template = /* HTML */ `
           <div class="score-track">
             <div class="deliveries" id="blue-score" aria-label="Blue delivered"></div>
             <span class="score-count" id="blue-count"></span>
+            <span class="retreat-count" id="blue-retreat" hidden></span>
           </div>
           <span class="direction">← CROSS TO THE LEFT</span>
         </div>

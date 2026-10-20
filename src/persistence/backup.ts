@@ -64,7 +64,9 @@ function validEntry(key: string, raw: string): boolean {
           ? isMapId(v)
           : k === 'opponent'
             ? isOpponent(v)
-            : k === 'difficulty' && ['gentle', 'standard'].includes(String(v)),
+            : k === 'movement'
+              ? ['classic', 'one-retreat'].includes(String(v))
+              : k === 'difficulty' && ['gentle', 'standard', 'expert'].includes(String(v)),
     );
   if (key === 'dama-tutorial-v1')
     return Object.keys(data).length === 1 && typeof data.completed === 'boolean';

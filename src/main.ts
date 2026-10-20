@@ -39,6 +39,7 @@ import { loadPuzzleProgress, recordPuzzle, savePuzzleProgress } from './persiste
 const $ = <T extends HTMLElement = HTMLElement>(selector: string): T =>
   document.querySelector<T>(selector)!;
 const selectedMap = () => $<HTMLInputElement>('input[name="board-map"]:checked').value as MapId;
+const selectedMovement = () => $<HTMLInputElement>('input[name="movement"]:checked').value;
 const selectedPack = () => $<HTMLInputElement>('input[name="puzzle-pack"]:checked').value as MapId;
 const selectedDifficulty = () =>
   $<HTMLInputElement>('input[name="challenge"]:checked').value as Session['difficulty'];
@@ -130,14 +131,18 @@ try {
 
 $<HTMLInputElement>(`#difficulty-${session.difficulty}`).checked = true;
 $<HTMLInputElement>(`#map-${session.state.map ?? 'classic'}`).checked = true;
+$<HTMLInputElement>(`#movement-${session.state.retreats ? 'one-retreat' : 'classic'}`).checked =
+  true;
 try {
   const choice = JSON.parse(localStorage.getItem('dama-home-choice-v1') ?? '{}');
   if (['journey', 'puzzles', 'free-play'].includes(choice.track))
     $<HTMLInputElement>(`#track-${choice.track}`).checked = true;
   if (isOpponent(choice.opponent)) chosenOpponent = choice.opponent;
   if (isMapId(choice.map)) $<HTMLInputElement>(`#map-${choice.map}`).checked = true;
-  if (['gentle', 'standard'].includes(choice.difficulty))
+  if (['gentle', 'standard', 'expert'].includes(choice.difficulty))
     $<HTMLInputElement>(`#difficulty-${choice.difficulty}`).checked = true;
+  if (['classic', 'one-retreat'].includes(choice.movement))
+    $<HTMLInputElement>(`#movement-${choice.movement}`).checked = true;
 } catch {
   /* Choosing a match does not require storage. */
 }
@@ -295,7 +300,8 @@ function restorePassNotice() {
     !result &&
     before &&
     after &&
-    before.slice(0, before.lastIndexOf(':')) === after.slice(0, after.lastIndexOf(':'))
+    before.replace(/:(blue|coral)(:r[01]{2})?$/, '$2') ===
+      after.replace(/:(blue|coral)(:r[01]{2})?$/, '$2')
       ? other(turn)
       : null;
   passUntil = passedSide ? performance.now() + 1800 : 0;
@@ -316,14 +322,14 @@ function render() {
     renderedMap = map.id;
   }
   $('#board-map-label').textContent =
-    `${map.name}${puzzleFor(session.puzzleId ?? '') ? ' · Puzzle' : practice ? ' · Free play' : ' · Journey'}`;
+    `${map.name}${puzzleFor(session.puzzleId ?? '') ? ' · Puzzle' : practice ? ' · Free play' : ' · Journey'}${s.retreats ? ' · One retreat' : ''}`;
   $('#board').setAttribute(
     'aria-label',
     `${map.name} board. ${map.description} Drag a pawn, or tap it then a connected empty spot.`,
   );
   const helpMap = screen === 'play' ? map : mapFor(selectedMap());
   $('#help-map-note').textContent =
-    `${helpMap.name}: ${helpMap.description} Three pawns, one connection per turn, first to deliver three wins.`;
+    `${helpMap.name}: ${helpMap.description} Three pawns, one connection per turn, first to deliver three wins.${screen === 'play' && s.retreats ? ' One Retreat is active: each side may move backward once in the whole match. Vertical moves are unlimited.' : ''}`;
   $('#help-challenge-note').textContent =
     activePuzzle() && screen === 'play'
       ? 'Puzzles use an exact defender. The challenge setting does not weaken its replies.'
@@ -412,6 +418,13 @@ function render() {
     ).join('');
     $(`#${side}-score`).setAttribute('aria-label', `${names[side]}: ${count} of 3 delivered`);
     $(`#${side}-count`).textContent = `${count} / 3`;
+    $(`#${side}-retreat`).hidden = !s.retreats;
+    $(`#${side}-retreat`).textContent = s.retreats ? `↶ ${s.retreats[side]} left` : '';
+    $(`#${side}-retreat`).title = 'Backward moves remaining, shared by all pawns';
+    $(`#${side}-retreat`).setAttribute(
+      'aria-label',
+      `${names[side]}: ${s.retreats?.[side] ?? 0} backward moves remaining, shared by all pawns`,
+    );
   }
   document.querySelectorAll<HTMLButtonElement>('[data-node]').forEach((button) => {
     const n = Number(button.dataset.node),
@@ -496,7 +509,7 @@ function render() {
         ? `You beat ${opponent.name}! ${next.name} is ready: ${next.description}`
         : challenge
           ? `${map.name} journey complete! Next: ${mapFor(challenge.map).name} · ${opponentFor(challenge.opponent).name}.`
-          : 'All six journeys complete! You beat every rival on every map. Replay a favourite or try the puzzle packs.'
+          : 'All journeys complete! You beat every rival on every map. Replay a favourite or try the puzzle packs.'
       : winner
         ? `${opponent.name} won this round. ${opponent.tip}`
         : `Try a different route next time. ${opponent.tip}`;
@@ -563,7 +576,7 @@ function render() {
     ? 'Journey · No undo. Win to unlock the next rival. Your existing unlocks are kept.'
     : puzzle
       ? 'Puzzles · Undo is available while solving. Hints are recorded separately.'
-      : 'Free play · Undo is available while playing. Results do not affect Journey.';
+      : `Free play · Undo is available while playing. Results do not affect Journey.${s.retreats ? ' One Retreat: one backward move per side for the whole match; vertical moves are unlimited.' : ' Classic movement: backward moves are unlimited.'}`;
   $<HTMLButtonElement>('#play-again').disabled = animating;
   $<HTMLButtonElement>('#undo-button').disabled =
     !allowsUndo(session) || ended || session.undo.length === 0 || thinking || animating;
@@ -656,7 +669,14 @@ function renderHomeActions() {
       : `${mapFor(selectedPack()).name} · ${pack.length} puzzles · Play Blue`
     : running
       ? `Saved ${isJourney(session) ? 'Journey' : session.mode === 'local' ? 'friend match' : 'Free play'} · ${mapFor(session.state.map).name}${session.mode === 'solo' ? ` · ${opponentFor(session.opponent).name}` : ''}`
-      : `${mapFor(selectedMap()).name} · ${selectedDifficulty() === 'gentle' ? 'Gentle' : 'Standard'} · ${selectedTrack() === 'journey' ? 'Journey' : 'Free play'}`;
+      : `${mapFor(selectedMap()).name} · ${selectedDifficulty() === 'gentle' ? 'Gentle' : selectedDifficulty() === 'expert' ? 'Expert' : 'Standard'} · ${selectedTrack() === 'journey' ? 'Journey' : 'Free play'}`;
+  if (
+    !puzzleMode &&
+    (running
+      ? !!session.state.retreats
+      : selectedTrack() === 'free-play' && selectedMovement() === 'one-retreat')
+  )
+    $('#home-action-context').textContent += ' · One retreat';
 }
 function cancelComputer() {
   if (timer) clearTimeout(timer);
@@ -865,7 +885,7 @@ async function commit(move: Move, human: boolean, origin?: { x: number; y: numbe
   render();
   const ended = finished();
   announce(
-    `${names[side]} ${delivered ? 'delivered a pawn' : `moved from ${mapFor(session.state.map).names[move.from]} to ${mapFor(session.state.map).names[move.to]}`}. ${ended ? $('#status').textContent : `${names[session.state.turn]} to move.${session.state.turn === side ? ' The other player had no legal move and passed.' : ''}`}`,
+    `${names[side]} ${delivered ? 'delivered a pawn' : `moved from ${mapFor(session.state.map).names[move.from]} to ${mapFor(session.state.map).names[move.to]}`}.${previous.retreats && previous.retreats[side] > (session.state.retreats?.[side] ?? 0) ? ' Their only retreat is now spent.' : ''} ${ended ? $('#status').textContent : `${names[session.state.turn]} to move.${session.state.turn === side ? ' The other player had no legal move and passed.' : ''}`}`,
   );
   scheduleComputer();
 }
@@ -1041,6 +1061,7 @@ function saveHomeChoice() {
         map: selectedMap(),
         difficulty: selectedDifficulty(),
         track: selectedTrack(),
+        movement: selectedMovement(),
       }),
     );
   } catch {
@@ -1052,7 +1073,7 @@ function requestHomeMatch(mode: Session['mode']) {
   if (hasGame && !session.state.result && session.state.turns > 0) {
     pendingStart = mode;
     $('#restart-detail').textContent =
-      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} on ${mapFor(selectedMap()).name} will replace your unfinished match. Your rival progress is kept.`;
+      `Playing ${mode === 'solo' ? opponentFor(chosenOpponent).name : 'with a friend'} on ${mapFor(selectedMap()).name} will replace your unfinished match. ${selectedTrack() === 'free-play' && selectedMovement() === 'one-retreat' ? 'One Retreat: one backward move per side.' : 'Classic movement: unlimited backward moves.'} Your rival progress is kept.`;
     $('#confirm-new').textContent = 'Replace match & play';
     openDialog('#restart');
   } else startNewMatch(mode);
@@ -1079,6 +1100,9 @@ function renderOpponents() {
   $('#puzzle-home').hidden = !puzzleMode;
   $('#opponent-cards').hidden = puzzleMode;
   $('#rival-heading').hidden = puzzleMode;
+  $('#movement-field').hidden = selectedTrack() !== 'free-play';
+  $('#movement-note').hidden =
+    selectedTrack() !== 'free-play' || selectedMovement() !== 'one-retreat';
   $('.lobby-bottom').hidden = puzzleMode;
   if (puzzleMode) {
     $('#mode-description').textContent = 'Find the winning moves.';
@@ -1179,6 +1203,15 @@ $('#difficulty-select').addEventListener('change', () => {
   render();
   announce(challengeDescription(selectedDifficulty()));
 });
+$('#movement-select').addEventListener('change', () => {
+  saveHomeChoice();
+  render();
+  announce(
+    selectedMovement() === 'one-retreat'
+      ? 'One Retreat: each side has one backward move shared by all pawns. Applies to the next Free play match.'
+      : 'Classic movement: unlimited backward moves. Applies to the next Free play match.',
+  );
+});
 $('#map-select').addEventListener('change', () => {
   render();
   saveHomeChoice();
@@ -1267,7 +1300,14 @@ function startNewMatch(fresh: Session['mode'] | false = false) {
   clearDelivery();
   const starter = fresh ? 'blue' : other(session.starter);
   session = {
-    state: initialState(starter, fresh ? selectedMap() : session.state.map),
+    state: initialState(
+      starter,
+      fresh ? selectedMap() : session.state.map,
+      fresh
+        ? (fresh === 'local' || selectedTrack() === 'free-play') &&
+            selectedMovement() === 'one-retreat'
+        : !!session.state.retreats,
+    ),
     starter,
     mode: fresh || session.mode,
     track: fresh

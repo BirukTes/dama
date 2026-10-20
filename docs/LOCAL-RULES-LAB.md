@@ -1,0 +1,11 @@
+# Local rules experiment
+
+With `npm.cmd run dev` running, open `/lab.html` on localhost or the PC's current LAN address. This separate Vite entry is intentionally absent from the production build and offline shell. It has no links from the shipped game, saves, Journey rewards or puzzle integration.
+
+The board picker offers Diamond, Weave and Switchyard. Diamond combines Classic with four extra edges (1–3, 1–5, 3–7, 5–7). Weave has 12 spots, 17 grid edges and six alternating diagonal edges. Switchyard has 11 spots, 14 base edges and eight diagonal approaches to its two middle junctions. Each side starts with three pawns on its bank and scores on the opposite bank. The lab now shares geometry with the production map registry; its comparison switches and independent opponent remain local-only. See [the integration notes](EXPANDED-BOARDS.md).
+
+Gold dashed lines mark the optional extra edges. Intersections without a node are not junctions. The default also enables one retreat per player for the entire match. Retreat means increasing x for Blue or decreasing x for Coral, away from that side's scoring bank. Vertical moves cost no retreat. Board, route and movement settings apply after Start/reset. Start side and human colour can both be changed; both-sides mode permits local human play. Wider maps retain 44px, non-overlapping pawn targets on small phones.
+
+The experimental engine is separate from production rules. It retains deliveries, automatic passes, threefold repetition and the 100-turn cap. Repetition keys include both retreat allowances. Undo restores the earlier state and allowances, including the computer response when applicable. The bounded four-ply opponent uses the same experimental legal moves and is distinct from the normal rival AI. This is a playtest, not evidence that either variant eliminates draws or balances the starting sides.
+
+`npx.cmd vitest run tests/experiment.test.ts` covers extra-edge legality, independent retreat spending, vertical movement, immutable state, resource-aware repetition keys, terminal delivery for both colours on all maps, graph connectivity, baseline Classic compatibility and full legal computer games on each map with limited and unlimited retreats. These checks establish playability, not competitive balance; compare both colours and starting sides during human testing.

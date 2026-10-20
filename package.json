@@ -14,6 +14,7 @@
     "analyze": "tsx src/analysis/analyze.ts",
     "analyze:rivals": "tsx src/analysis/rivals.ts",
     "analyze:maps": "tsx src/analysis/calibrate.ts",
+    "analyze:expert": "tsx scripts/analyze-expert.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test:browser": "node tests/browser-check.mjs",
     "test:appearance": "node tests/appearance-browser.mjs",
@@ -32,7 +33,9 @@
     "test:packs": "node tests/map-puzzles-browser.mjs",
     "test:solo": "node tests/solo-improvements-browser.mjs",
     "test:hierarchy": "node tests/hierarchy-browser.mjs",
-    "test:lobby": "node tests/compact-rivals-browser.mjs"
+    "test:lobby": "node tests/compact-rivals-browser.mjs",
+    "test:expanded": "node tests/expanded-boards-browser.mjs",
+    "test:expert": "node tests/expert-browser.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

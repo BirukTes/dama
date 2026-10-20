@@ -145,6 +145,9 @@ try {
     ['twin-bridges', 3, 2],
     ['long-crossing', 4, 3],
     ['islands', 5, 4],
+    ['diamond', 2, 4],
+    ['weave', 3, 2],
+    ['switchyard', 2, 1],
   ]) {
     await page.locator(`label:has(#map-${id})`).click();
     await page.locator('#start-button').click();
@@ -158,6 +161,34 @@ try {
     );
     await home();
   }
+  // The optional movement rule and both allowances must survive an offline reload.
+  await page.locator('label:has(#map-weave)').click();
+  await page.locator('label:has(#difficulty-expert)').click();
+  await page.locator('label:has(#movement-one-retreat)').click();
+  await page.locator('#start-button').click();
+  if (await page.locator('#restart[open]').count()) await page.locator('#confirm-new').click();
+  await page.locator('[data-node="3"]').click();
+  await page.locator('[data-node="2"]').click();
+  await page.waitForFunction(
+    () =>
+      JSON.parse(localStorage.getItem('dama-session-v1')).state.turns >= 2 &&
+      !document.querySelector('.traveller'),
+  );
+  const restricted = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('dama-session-v1')).state,
+  );
+  assert.ok(restricted.retreats);
+  assert.equal(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).difficulty),
+    'expert',
+  );
+  await page.reload();
+  assert.deepEqual(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('dama-session-v1')).state),
+    restricted,
+  );
+  assert.equal(await page.locator('#blue-retreat').isVisible(), true);
+  await home();
   const match = await page.evaluate(() => localStorage.getItem('dama-session-v1'));
   await page.locator('#puzzles-button').click();
   await page.locator('[data-puzzle="last-step"]').click();
@@ -308,7 +339,7 @@ try {
   assert.deepEqual(await snapshot(), before);
   assert.deepEqual(errors, []);
   console.log(
-    'Passed: offline reload, all six rival-worker boards, puzzle/defence worker, icon preview, install event UI, safe waiting update, active-game and multi-tab guards, save preservation, cache repair and rejected corrupt release.',
+    'Passed: offline reload, all nine rival-worker boards, puzzle/defence worker, icon preview, install event UI, safe waiting update, active-game and multi-tab guards, save preservation, cache repair and rejected corrupt release.',
   );
 } finally {
   await browser.close();

@@ -18,7 +18,16 @@ try {
   await page.locator('#home-button').click();
   const match = await page.evaluate(() => localStorage.getItem('dama-session-v1'));
   await page.locator('#puzzles-button').click();
-  for (const map of ['crossroads', 'ring-road', 'twin-bridges', 'long-crossing', 'islands']) {
+  for (const map of [
+    'crossroads',
+    'ring-road',
+    'twin-bridges',
+    'long-crossing',
+    'islands',
+    'diamond',
+    'weave',
+    'switchyard',
+  ]) {
     await page.locator(`label:has(#pack-${map})`).click();
     assert.equal(await page.locator('[data-puzzle]').count(), 3);
     for (let number = 1; number <= 3; number++) {
@@ -67,15 +76,15 @@ try {
     await page.evaluate(
       () => Object.keys(JSON.parse(localStorage.getItem('dama-puzzles-v1'))).length,
     ),
-    15,
+    24,
   );
   assert.equal(await page.evaluate(() => localStorage.getItem('dama-session-v1')), match);
   await page.reload();
-  assert.equal(await page.locator('#pack-islands').isChecked(), true);
+  assert.equal(await page.locator('#pack-switchyard').isChecked(), true);
   await page.locator('#settings-button').click();
   await page.locator('#achievements-settings summary').click();
-  assert.equal(await page.locator('.achievement.earned').count(), 6);
-  await expect(page.locator('#achievements-count')).toContainText('6 / 16');
+  assert.equal(await page.locator('.achievement.earned').count(), 9);
+  await expect(page.locator('#achievements-count')).toContainText('9 / 22');
   await page.locator('#settings .primary.close').click();
   await page.locator('label:has(#pack-classic)').click();
   for (const size of [
@@ -100,7 +109,7 @@ try {
   await page.screenshot({ path: '.inspection/puzzle-packs.png' });
   assert.deepEqual(errors, []);
   console.log(
-    'Passed 15 new puzzle solutions with real defence worker, map saves, pack completion, match isolation, persistence and four layouts.',
+    'Passed 24 alternative-map puzzle solutions with real defence worker, map saves, pack completion, match isolation, persistence and four layouts.',
   );
 } finally {
   await browser.close();

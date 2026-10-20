@@ -57,14 +57,14 @@ export function achievements(
     {
       id: 'all-journeys',
       title: 'Every way across',
-      description: 'Beat all 18 Journey rivals across the six maps.',
+      description: `Beat all ${mapList.length * 3} Journey rivals across the ${mapList.length} maps.`,
       current: wins,
-      target: 18,
+      target: mapList.length * 3,
     },
     {
       id: 'all-puzzles',
       title: 'Route finder',
-      description: 'Solve all 21 puzzles.',
+      description: `Solve all ${puzzles.length} puzzles.`,
       current: completed,
       target: puzzles.length,
     },

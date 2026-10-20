@@ -42,6 +42,8 @@ npm.cmd run test:solo
 npm.cmd run test:packs
 npm.cmd run test:hierarchy
 npm.cmd run test:lobby
+npm.cmd run test:expanded
+npm.cmd run test:expert
 npm.cmd run test:tutorial
 npm.cmd run test:sound
 npm.cmd run test:puzzles
@@ -58,17 +60,17 @@ Each side starts with three pawns on one edge of the selected board. Move one pa
 
 Provisional rules pass a blocked player and draw on mutual blocking, threefold repetition, or 100 individual turns including passes. A fresh match starts with Blue; rematches alternate the starting side.
 
-The prototype supports computer matches and two-player practice on one device. Journey has no undo; Free play and puzzles retain it while playing. Practice undo restores the previous human turn in solo mode. Existing unlocks are kept. The computer follows the same rules, uses bounded search in a worker, and pauses on Home or while menus are open. Gentle and Standard are heuristic difficulties rather than proven optimal play.
+The prototype supports computer matches and two-player practice on one device. Journey has no undo; Free play and puzzles retain it while playing. Practice undo restores the previous human turn in solo mode. Existing unlocks are kept. The computer follows the same rules, uses bounded search in a worker, and pauses on Home or while menus are open. Gentle, Standard and Expert are heuristic difficulties rather than proven optimal play.
 
-Journey mode follows a separate three-rival journey on each map: Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Win against each rival to unlock the next; either challenge setting counts. Rival profiles show playing styles and that map’s local win/loss/draw records. All maps are available from the start; each unlocks rivals independently. Free play offers every rival immediately and supports a friend on the same device, without changing Journey records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
+Journey mode follows a separate three-rival journey on each map: On Standard, Coral uses shorter lookahead, the Runner weights delivery and proximity more strongly, and the Guardian searches deeper and values restricting opposing movement. Expert strengthens every rival while retaining those playing styles. Win against each rival to unlock the next; any difficulty counts. Rival profiles show playing styles and that map’s local win/loss/draw records. All maps are available from the start; each unlocks rivals independently. Free play offers every rival immediately and supports a friend on the same device, without changing Journey records. Results invite the next challenge, and finished matches count once across reloads. Older saved matches resume as Coral matches.
 
-All rivals now take immediate wins and avoid an immediate losing reply when possible, including on Gentle. Completed iterative search depths share a 24,000-node decision budget; equivalent moves can vary and repeated routes are discouraged when viable. Guardian values both sides' deliveries equally rather than treating an even score as a reason to settle for a draw. These are heuristic styles; human difficulty and phone performance still need feedback.
+All rivals now take immediate wins and avoid an immediate losing reply when possible, including on Gentle. Completed iterative search depths share a 24,000-node decision budget on Gentle/Standard; Expert allows up to eight individual moves and 96,000 search nodes. See [Expert validation and timings](docs/EXPERT.md). On all settings, equivalent moves can vary and repeated routes are discouraged when viable. Guardian values both sides' deliveries equally rather than treating an even score as a reason to settle for a draw. These are heuristic styles; human difficulty and phone performance still need feedback.
 
 ## Board maps
 
-Home's board selector offers six maps: **Classic** (9 spots), **Crossroads** (9), **Ring Road** (9), **Twin Bridges** (12), **Long Crossing** (15), and **Islands** (9, including a passing bay). All use three pawns per side, opposite-edge delivery, and the same move/pass/draw rules. Larger maps use a wider layout. Both computer and local play support every map; undo, rematches, keyboard navigation and saves retain the correct graph. Older saves load as Classic.
+Home's board selector offers nine maps: **Classic** (9 spots), **Crossroads** (9), **Ring Road** (9), **Twin Bridges** (12), **Long Crossing** (15), **Islands** (9, including a passing bay), **Diamond** (9), **Weave** (12), and **Switchyard** (11). All use three pawns per side, opposite-edge delivery, and the same pass/draw rules. Larger maps use a wider layout. Both computer and local play support every map; undo, rematches, keyboard navigation and saves retain the correct graph. Older saves load as Classic.
 
-All six maps have independent Journey records and rival unlocks. Free play makes every rival available on any map without affecting those records. Existing Classic progress is preserved; older alternative-board practice saves remain Free play. All maps now have puzzle packs, saved separately from regular matches. See [the game structure](docs/GAME-STRUCTURE.md), [map puzzle validation](docs/MAP-PUZZLES.md) and [the board catalogue](docs/BOARD-MAPS.md).
+All nine maps have independent Journey records and rival unlocks. Free play makes every rival available on any map without affecting those records. Existing progress is preserved; older alternative-board practice saves remain Free play. All maps have puzzle packs, saved separately from regular matches. Free play also offers **Movement → Classic / One retreat**: the optional rule permits one backward move per side for the entire match, shared by all three pawns. Vertical moves remain unlimited. The rule is fixed at match creation, saved with both remaining allowances, and obeyed by every rival. Journey, puzzles and guided lessons retain unrestricted movement. See [the integration notes](docs/EXPANDED-BOARDS.md), [map puzzle validation](docs/MAP-PUZZLES.md) and [the board catalogue](docs/BOARD-MAPS.md).
 
 ## Interactive help
 
@@ -78,7 +80,7 @@ The lesson runs in its own modal board. It never replaces a match, puzzle attemp
 
 ## Puzzles
 
-Home's **Puzzles** tab shows six free map packs: six Classic challenges ranging from one to four Blue moves, plus three introductory puzzles for each alternative board. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. All 21 puzzles are reachable under their map's rules and checked against every legal reply, including draw history and automatic passes.
+Home's **Puzzles** tab shows nine free map packs: six Classic challenges ranging from one to four Blue moves, plus three introductory puzzles for each alternative board. Deliver all remaining pawns before using the budget. Coral uses an exact bounded defence, independent of the selected rival and challenge setting. All 30 puzzles are reachable under their map's rules and checked against every legal reply, including draw history and automatic passes.
 
 Hints give a clue and a verified next move in a dialog. Completion records distinguish hinted and unassisted solutions, with best move counts. Retry and next-puzzle actions are available in results. Attempts save separately from regular matches, so trying a puzzle preserves an unfinished solo or local game. Return Home to continue that match; select the saved puzzle to resume its attempt. Puzzles do not unlock rivals or add to rival statistics.
 
@@ -104,7 +106,7 @@ The original font copyright and licence are included in `public/licenses/dm-sans
 
 The baseline analysis enumerates 2,044 reachable positions, including 10 automatic-pass transitions and no mutual-blocking terminal positions. Retrograde classification treats indefinite cycles as draws and finds both initial positions drawn under perfect play. This excludes threefold-repetition history and the 100-turn cap, and does not establish human match quality or final-ruleset balance.
 
-The tutorial, offline production build, [backup export/import](docs/BACKUPS.md), six puzzle packs and 16 optional achievements are available. Home names the next Journey goal; results offer retry/rematch and Free play practice. Settings → Optional goals shows achievements derived from existing records, without adding unlock gates. See [the six improvements](docs/IMPROVEMENTS.md) and [difficulty/accessibility notes](docs/SOLO-POLISH.md). Physical-phone validation and human difficulty feedback remain necessary.
+The tutorial, offline production build, [backup export/import](docs/BACKUPS.md), nine puzzle packs and 22 optional achievements are available. Results offer retry/rematch and Free play practice. Settings → Optional goals shows achievements derived from existing records, without adding unlock gates. See [the six improvements](docs/IMPROVEMENTS.md) and [difficulty/accessibility notes](docs/SOLO-POLISH.md). Physical-phone validation and human difficulty feedback remain necessary.
 
 ## App icons and installation testing
 
@@ -126,7 +128,7 @@ HTTP Wi-Fi previews are useful for phone testing; use the HTTPS deployment for p
 
 ## Offline play and updates
 
-The production build caches the complete game, all six maps, both AI workers’ logic, puzzles, tutorial, fonts, icon choices and installation previews. No account is required. In **Settings → Install & offline play**, check download readiness, request installation when supported, or read iPhone Add to Home Screen instructions. Installed-app detection hides installation guidance when running standalone; a browser tab is not assumed to mean the app is uninstalled.
+The production build caches the complete game, all nine maps, both AI workers’ logic, puzzles, tutorial, fonts, icon choices and installation previews. No account is required. In **Settings → Install & offline play**, check download readiness, request installation when supported, or read iPhone Add to Home Screen instructions. Installed-app detection hides installation guidance when running standalone; a browser tab is not assumed to mean the app is uninstalled.
 
 New releases download in the background and wait. An **Update & reload** action is available from Home, including Home’s Settings. It verifies current saves before activation and asks you to close other DA’MA windows first. Updates never reload an ongoing game automatically. Application caches are separate from saved progress, and the previous release remains cached during handover. A failed or mismatched download cannot replace the working release.
 

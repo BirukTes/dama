@@ -10,7 +10,11 @@ import {
 } from '../game/rules';
 import { maps, mapFor, type MapId } from '../game/maps';
 import type { OpponentId } from '../game/opponents';
-export type Difficulty = 'gentle' | 'standard';
+export type Difficulty = 'gentle' | 'standard' | 'expert';
+export interface SearchDiagnostics {
+  nodes: number;
+  completedDepth: number;
+}
 const distance = (start: number, side: Side, map: MapId): number => {
   let frontier = [start];
   const visited = new Set(frontier);
@@ -71,7 +75,12 @@ export function chooseMove(
   difficulty: Difficulty,
   random: () => number = Math.random,
   opponent: OpponentId = 'coral',
+  diagnostics?: SearchDiagnostics,
 ): Move | null {
+  if (diagnostics) {
+    diagnostics.nodes = 0;
+    diagnostics.completedDepth = 0;
+  }
   let moves = legalMoves(s);
   if (!moves.length) return null;
   const side = s.turn;
@@ -108,6 +117,7 @@ export function chooseMove(
     return value;
   };
   let nodes = 0;
+  const nodeBudget = difficulty === 'expert' ? 96000 : 24000;
   const exhausted = Symbol('search budget');
   const ordered = (state: State) =>
     legalMoves(state).sort(
@@ -116,7 +126,7 @@ export function chooseMove(
         Number(goalsFor(state)[state.turn].includes(a.to)),
     );
   function search(state: State, depth: number, alpha: number, beta: number): number {
-    if (++nodes > 24000) throw exhausted;
+    if (++nodes > nodeBudget) throw exhausted;
     if (depth === 0 || state.result) return valueOf(state);
     const maximizing = state.turn === side;
     let best = maximizing ? -Infinity : Infinity;
@@ -131,7 +141,15 @@ export function chooseMove(
   }
   let finalists = moves;
   const maxDepth =
-    difficulty === 'gentle' ? 2 : opponent === 'coral' ? 3 : opponent === 'runner' ? 4 : 6;
+    difficulty === 'expert'
+      ? 8
+      : difficulty === 'gentle'
+        ? 2
+        : opponent === 'coral'
+          ? 3
+          : opponent === 'runner'
+            ? 4
+            : 6;
   // Only completed depths decide a move; a partial search must not favour early options.
   for (let depth = 1; depth <= maxDepth; depth++) {
     let best = -Infinity;
@@ -154,6 +172,8 @@ export function chooseMove(
       throw error;
     }
     finalists = candidates;
+    if (diagnostics) diagnostics.completedDepth = depth;
   }
+  if (diagnostics) diagnostics.nodes = nodes;
   return pick(finalists);
 }

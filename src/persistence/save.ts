@@ -19,6 +19,12 @@ const storageKey = 'dama-session-v1';
 export function validState(value: unknown): value is State {
   if (!value || typeof value !== 'object') return false;
   const s = value as State;
+  if (
+    s.retreats !== undefined &&
+    (!s.retreats ||
+      !(['blue', 'coral'] as const).every((side) => [0, 1].includes(s.retreats![side])))
+  )
+    return false;
   if (s.map !== undefined && !isMapId(s.map)) return false;
   if (
     !Array.isArray(s.board) ||
@@ -46,9 +52,9 @@ export function validState(value: unknown): value is State {
       (k) =>
         typeof k === 'string' &&
         k.startsWith(s.map && s.map !== 'classic' ? `${s.map}|` : '') &&
-        new RegExp(`^[bc.]{${s.board.length}}:[0-3]:[0-3]:(blue|coral)$`).test(
-          k.slice(s.map && s.map !== 'classic' ? s.map.length + 1 : 0),
-        ),
+        new RegExp(
+          `^[bc.]{${s.board.length}}:[0-3]:[0-3]:(blue|coral)${s.retreats ? ':r[01]{2}' : ''}$`,
+        ).test(k.slice(s.map && s.map !== 'classic' ? s.map.length + 1 : 0)),
     ) ||
     s.history.at(-1) !== key(s)
   )
@@ -80,9 +86,11 @@ export function parseSession(raw: string): Session | null {
       !data ||
       data.version !== 1 ||
       !validState(data.state) ||
+      (data.state.retreats !== undefined &&
+        (data.puzzleId !== undefined || (data.mode !== 'local' && data.track !== 'free-play'))) ||
       !['solo', 'local'].includes(data.mode) ||
       (data.track !== undefined && !['journey', 'free-play'].includes(data.track)) ||
-      !['gentle', 'standard'].includes(data.difficulty) ||
+      !['gentle', 'standard', 'expert'].includes(data.difficulty) ||
       !['blue', 'coral'].includes(data.starter) ||
       (data.opponent !== undefined && !isOpponent(data.opponent)) ||
       (data.matchId !== undefined && typeof data.matchId !== 'string') ||
@@ -93,7 +101,10 @@ export function parseSession(raw: string): Session | null {
       !Array.isArray(data.undo) ||
       data.undo.length > 100 ||
       !data.undo.every(
-        (s: unknown) => validState(s) && (s.map ?? 'classic') === (data.state.map ?? 'classic'),
+        (s: unknown) =>
+          validState(s) &&
+          (s.map ?? 'classic') === (data.state.map ?? 'classic') &&
+          !!s.retreats === !!data.state.retreats,
       )
     )
       return null;

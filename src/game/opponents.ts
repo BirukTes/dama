@@ -34,7 +34,9 @@ export const opponents = [
 export type OpponentId = (typeof opponents)[number]['id'];
 export const isOpponent = (id: unknown): id is OpponentId => opponents.some((o) => o.id === id);
 export const opponentFor = (id: OpponentId = 'coral') => opponents.find((o) => o.id === id)!;
-export const challengeDescription = (difficulty: 'gentle' | 'standard') =>
-  difficulty === 'gentle'
-    ? 'Gentle uses shorter lookahead and sometimes chooses a less efficient route. Every rival still takes immediate wins and avoids an immediate loss when possible.'
-    : 'Standard gives each rival its full lookahead: Coral is forgiving, Runner favours delivery speed and Guardian searches further. Neither setting uses hidden information.';
+export const challengeDescription = (difficulty: 'gentle' | 'standard' | 'expert') =>
+  difficulty === 'expert'
+    ? 'Expert searches up to eight individual moves ahead with a larger search budget. Rivals keep their playing styles and follow the same movement rules. It uses no hidden information and does not enable One Retreat.'
+    : difficulty === 'gentle'
+      ? 'Gentle uses shorter lookahead and sometimes chooses a less efficient route. Every rival still takes immediate wins and avoids an immediate loss when possible.'
+      : 'Standard uses each rival’s usual lookahead: Coral is forgiving, Runner favours delivery speed and Guardian searches further. No difficulty uses hidden information.';

@@ -38,9 +38,14 @@ try {
     ['twin-bridges', 12, 16, 3, 2],
     ['long-crossing', 15, 22, 4, 3],
     ['islands', 9, 11, 5, 4],
+    ['diamond', 9, 20, 2, 4],
+    ['weave', 12, 23, 3, 2],
+    ['switchyard', 11, 22, 2, 1],
   ]) {
     await page.locator(`label:has(#map-${id})`).click();
     await page.locator('label:has(#track-free-play)').click();
+    if (['diamond', 'weave', 'switchyard'].includes(id))
+      await page.locator('label:has(#difficulty-expert)').click();
     await page.locator('[data-rival="guardian"]').click();
     await page.locator('#start-button').click();
     if (await page.locator('#restart[open]').count()) await page.locator('#confirm-new').click();

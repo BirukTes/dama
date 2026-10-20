@@ -124,7 +124,7 @@ describe('rival decisions', () => {
     };
     state.history = [key(state)];
     for (const { id } of opponents)
-      for (const difficulty of ['gentle', 'standard'] as const)
+      for (const difficulty of ['gentle', 'standard', 'expert'] as const)
         expect(chooseMove(state, difficulty, () => 0.99, id)).toEqual({ from: 3, to: 0 });
   });
   it('varies equally winning finishes without making illegal moves', () => {

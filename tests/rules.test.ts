@@ -105,7 +105,7 @@ describe('original board and rules', () => {
   });
   it('returns legal computer moves and takes an immediate win', () => {
     const s = initialState('coral');
-    for (const difficulty of ['gentle', 'standard'] as const)
+    for (const difficulty of ['gentle', 'standard', 'expert'] as const)
       expect(legalMoves(s)).toContainEqual(chooseMove(s, difficulty, () => 0.5));
     const win = position(
       [null, 'blue', null, null, 'coral', null, null, null, null],

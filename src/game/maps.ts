@@ -1,5 +1,13 @@
 export type MapId =
-  'classic' | 'crossroads' | 'ring-road' | 'twin-bridges' | 'long-crossing' | 'islands';
+  | 'classic'
+  | 'crossroads'
+  | 'ring-road'
+  | 'twin-bridges'
+  | 'long-crossing'
+  | 'islands'
+  | 'diamond'
+  | 'weave'
+  | 'switchyard';
 export type Edge = [number, number];
 type Spots = { blue: number[]; coral: number[] };
 export interface BoardMap {
@@ -163,6 +171,95 @@ export const maps: Record<MapId, BoardMap> = {
     [0, 1, 2],
     [5, 6, 7],
     [3, 4, 8],
+    true,
+  ),
+  diamond: make(
+    'diamond',
+    'Diamond',
+    'Classic with four outer bypasses. Crossing lines connect only at marked spots.',
+    gridPoints(3),
+    gridNames(3),
+    [
+      ...perimeter,
+      ...[0, 1, 2, 3, 5, 6, 7, 8].map((n) => [4, n] as Edge),
+      [1, 3],
+      [1, 5],
+      [3, 7],
+      [5, 7],
+    ],
+    [0, 3, 6],
+    [2, 5, 8],
+    [1, 3, 4, 5, 7],
+  ),
+  weave: make(
+    'weave',
+    'Weave',
+    'Three lanes across four columns, with alternating diagonals for changing lanes.',
+    gridPoints(4),
+    gridNames(4),
+    [...gridEdges(4), [0, 5], [2, 5], [2, 7], [5, 8], [5, 10], [7, 10]],
+    [0, 4, 8],
+    [3, 7, 11],
+    [5, 6],
+    true,
+  ),
+  switchyard: make(
+    'switchyard',
+    'Switchyard',
+    'Two junctions link the upper, middle and lower routes. Switch between them to find an opening.',
+    [
+      [80, 80],
+      [250, 80],
+      [420, 80],
+      [80, 250],
+      [165, 250],
+      [250, 250],
+      [335, 250],
+      [420, 250],
+      [80, 420],
+      [250, 420],
+      [420, 420],
+    ],
+    [
+      'top left',
+      'top centre',
+      'top right',
+      'middle left',
+      'left junction',
+      'centre',
+      'right junction',
+      'middle right',
+      'bottom left',
+      'bottom centre',
+      'bottom right',
+    ],
+    [
+      [0, 1],
+      [1, 2],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [8, 9],
+      [9, 10],
+      [0, 3],
+      [3, 8],
+      [2, 7],
+      [7, 10],
+      [1, 5],
+      [5, 9],
+      [0, 4],
+      [1, 4],
+      [8, 4],
+      [9, 4],
+      [1, 6],
+      [2, 6],
+      [9, 6],
+      [10, 6],
+    ],
+    [0, 3, 8],
+    [2, 7, 10],
+    [4, 6],
     true,
   ),
 };

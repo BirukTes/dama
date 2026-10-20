@@ -36,7 +36,7 @@ describe('authored puzzles', () => {
     }
   });
   it('provides legal map-specific packs whose new positions have replayable reachability witnesses', () => {
-    expect(puzzles).toHaveLength(21);
+    expect(puzzles).toHaveLength(30);
     for (const map of Object.values(maps)) {
       expect(puzzlesForMap(map.id)).toHaveLength(map.id === 'classic' ? 6 : 3);
       for (const p of puzzlesForMap(map.id)) {

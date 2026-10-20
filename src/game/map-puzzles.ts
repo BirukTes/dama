@@ -273,4 +273,139 @@ export const mapPuzzles: Puzzle[] = [
     explanation:
       'A verified opening is left landing → top left. From there, respond to Coral and keep a delivery route open. Blue can finish within 3 moves against every legal reply.',
   },
+  {
+    id: 'diamond-1',
+    map: 'diamond',
+    title: 'Outer finish',
+    theme: 'Spot the finish',
+    moves: 1,
+    board: [null, 'blue', null, null, 'coral', null, null, null, null],
+    delivered: {
+      blue: 2,
+      coral: 2,
+    },
+    hint: 'Classic with four outer bypasses. Crossing lines connect only at marked spots. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is top middle → top left. From there, respond to Coral and keep a delivery route open. Blue can finish within 1 move against every legal reply.',
+  },
+  {
+    id: 'diamond-2',
+    map: 'diamond',
+    title: 'Bypass the centre',
+    theme: 'Count the connections',
+    moves: 2,
+    board: ['coral', 'blue', null, null, 'blue', null, null, null, null],
+    delivered: {
+      blue: 1,
+      coral: 2,
+    },
+    hint: 'Classic with four outer bypasses. Crossing lines connect only at marked spots. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is top middle → middle left. From there, respond to Coral and keep a delivery route open. Blue can finish within 2 moves against every legal reply.',
+  },
+  {
+    id: 'diamond-3',
+    map: 'diamond',
+    title: 'Two ways home',
+    theme: 'Choose a sequence',
+    moves: 3,
+    board: ['coral', 'blue', 'blue', null, null, null, null, 'coral', null],
+    delivered: {
+      blue: 1,
+      coral: 1,
+    },
+    hint: 'Classic with four outer bypasses. Crossing lines connect only at marked spots. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is top right → centre. From there, respond to Coral and keep a delivery route open. Blue can finish within 3 moves against every legal reply.',
+  },
+  {
+    id: 'weave-1',
+    map: 'weave',
+    title: 'Last crossing',
+    theme: 'Spot the finish',
+    moves: 1,
+    board: [null, null, null, null, null, 'blue', null, null, null, null, 'coral', null],
+    delivered: {
+      blue: 2,
+      coral: 2,
+    },
+    hint: 'Three lanes across four columns, with alternating diagonals for changing lanes. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is middle column 2 → middle left. From there, respond to Coral and keep a delivery route open. Blue can finish within 1 move against every legal reply.',
+  },
+  {
+    id: 'weave-2',
+    map: 'weave',
+    title: 'Change lanes',
+    theme: 'Count the connections',
+    moves: 2,
+    board: [null, null, null, null, null, null, null, null, null, 'coral', 'blue', null],
+    delivered: {
+      blue: 2,
+      coral: 2,
+    },
+    hint: 'Three lanes across four columns, with alternating diagonals for changing lanes. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is bottom column 3 → middle column 2. From there, respond to Coral and keep a delivery route open. Blue can finish within 2 moves against every legal reply.',
+  },
+  {
+    id: 'weave-3',
+    map: 'weave',
+    title: 'Thread the lanes',
+    theme: 'Choose a sequence',
+    moves: 3,
+    board: ['coral', null, 'blue', null, null, 'blue', null, null, null, null, null, null],
+    delivered: {
+      blue: 1,
+      coral: 2,
+    },
+    hint: 'Three lanes across four columns, with alternating diagonals for changing lanes. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is top column 3 → top column 2. From there, respond to Coral and keep a delivery route open. Blue can finish within 3 moves against every legal reply.',
+  },
+  {
+    id: 'switchyard-1',
+    map: 'switchyard',
+    title: 'Junction delivery',
+    theme: 'Spot the finish',
+    moves: 1,
+    board: [null, null, null, 'coral', null, null, null, null, null, 'blue', null],
+    delivered: {
+      blue: 2,
+      coral: 2,
+    },
+    hint: 'Two junctions link the upper, middle and lower routes. Switch between them to find an opening. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is bottom centre → bottom left. From there, respond to Coral and keep a delivery route open. Blue can finish within 1 move against every legal reply.',
+  },
+  {
+    id: 'switchyard-2',
+    map: 'switchyard',
+    title: 'Choose a switch',
+    theme: 'Count the connections',
+    moves: 2,
+    board: [null, 'blue', null, null, null, null, null, null, 'coral', 'blue', null],
+    delivered: {
+      blue: 1,
+      coral: 2,
+    },
+    hint: 'Two junctions link the upper, middle and lower routes. Switch between them to find an opening. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is top centre → top left. From there, respond to Coral and keep a delivery route open. Blue can finish within 2 moves against every legal reply.',
+  },
+  {
+    id: 'switchyard-3',
+    map: 'switchyard',
+    title: 'Both junctions',
+    theme: 'Choose a sequence',
+    moves: 3,
+    board: ['coral', null, null, null, 'blue', null, 'coral', null, null, null, 'blue'],
+    delivered: {
+      blue: 1,
+      coral: 1,
+    },
+    hint: 'Two junctions link the upper, middle and lower routes. Switch between them to find an opening. Count the connections each remaining pawn needs before choosing your first move.',
+    explanation:
+      'A verified opening is bottom right → bottom centre. From there, respond to Coral and keep a delivery route open. Blue can finish within 3 moves against every legal reply.',
+  },
 ];

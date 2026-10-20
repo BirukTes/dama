@@ -17,7 +17,17 @@ await page.addInitScript(() => {
     JSON.stringify({ motion: true, sound: false, soundPreferenceSet: true }),
   );
 });
-const ids = ['classic', 'crossroads', 'ring-road', 'twin-bridges', 'long-crossing', 'islands'];
+const ids = [
+  'classic',
+  'crossroads',
+  'ring-road',
+  'twin-bridges',
+  'long-crossing',
+  'islands',
+  'diamond',
+  'weave',
+  'switchyard',
+];
 const key = (id) => (id === 'classic' ? 'dama-progress-v1' : `dama-progress-${id}-v1`);
 const progress = (id) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key(id));
 async function finish(id, opponent, track = 'journey', mode = 'solo') {
@@ -89,7 +99,7 @@ try {
         );
       } else {
         assert.match(await page.locator('#journey-result').textContent(), /journeys? complete/);
-        if (id !== 'islands') {
+        if (id !== ids.at(-1)) {
           assert.match(await page.locator('#next-opponent').textContent(), /Explore/);
           await page.locator('#next-opponent').click();
           assert.equal(await page.locator(`#map-${ids[ids.indexOf(id) + 1]}`).isChecked(), true);
@@ -189,7 +199,7 @@ try {
   await page.screenshot({ path: '.inspection/game-structure-home.png' });
   assert.deepEqual(errors, []);
   console.log(
-    'Passed: six independent journeys, 18 real delivery/unlock results, reload deduplication, next-rival/map navigation, Free play isolation and persistence, and Classic puzzle pack.',
+    'Passed: nine independent journeys, 27 real delivery/unlock results, reload deduplication, next-rival/map navigation, Free play isolation and persistence, and Classic puzzle pack.',
   );
 } finally {
   await browser.close();

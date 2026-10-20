@@ -1862,4 +1862,542 @@ export const mapPuzzleWitnesses: Record<string, Move[]> = {
       to: 4,
     },
   ],
+  'diamond-3': [
+    {
+      from: 5,
+      to: 1,
+    },
+    {
+      from: 3,
+      to: 4,
+    },
+    {
+      from: 8,
+      to: 7,
+    },
+    {
+      from: 4,
+      to: 5,
+    },
+    {
+      from: 7,
+      to: 3,
+    },
+    {
+      from: 6,
+      to: 7,
+    },
+  ],
+  'diamond-2': [
+    {
+      from: 5,
+      to: 1,
+    },
+    {
+      from: 3,
+      to: 4,
+    },
+    {
+      from: 8,
+      to: 7,
+    },
+    {
+      from: 4,
+      to: 5,
+    },
+    {
+      from: 7,
+      to: 3,
+    },
+    {
+      from: 6,
+      to: 7,
+    },
+    {
+      from: 2,
+      to: 4,
+    },
+    {
+      from: 7,
+      to: 5,
+    },
+  ],
+  'diamond-1': [
+    {
+      from: 5,
+      to: 1,
+    },
+    {
+      from: 3,
+      to: 4,
+    },
+    {
+      from: 8,
+      to: 7,
+    },
+    {
+      from: 4,
+      to: 5,
+    },
+    {
+      from: 7,
+      to: 3,
+    },
+    {
+      from: 6,
+      to: 7,
+    },
+    {
+      from: 2,
+      to: 4,
+    },
+    {
+      from: 7,
+      to: 5,
+    },
+    {
+      from: 4,
+      to: 6,
+    },
+    {
+      from: 0,
+      to: 4,
+    },
+  ],
+  'weave-2': [
+    {
+      from: 7,
+      to: 2,
+    },
+    {
+      from: 0,
+      to: 1,
+    },
+    {
+      from: 11,
+      to: 10,
+    },
+    {
+      from: 8,
+      to: 5,
+    },
+    {
+      from: 10,
+      to: 6,
+    },
+    {
+      from: 5,
+      to: 10,
+    },
+    {
+      from: 2,
+      to: 5,
+    },
+    {
+      from: 1,
+      to: 2,
+    },
+    {
+      from: 5,
+      to: 0,
+    },
+    {
+      from: 10,
+      to: 7,
+    },
+    {
+      from: 6,
+      to: 5,
+    },
+    {
+      from: 2,
+      to: 6,
+    },
+    {
+      from: 5,
+      to: 2,
+    },
+    {
+      from: 4,
+      to: 5,
+    },
+    {
+      from: 2,
+      to: 1,
+    },
+    {
+      from: 5,
+      to: 8,
+    },
+    {
+      from: 3,
+      to: 7,
+    },
+    {
+      from: 6,
+      to: 10,
+    },
+    {
+      from: 1,
+      to: 0,
+    },
+    {
+      from: 10,
+      to: 11,
+    },
+    {
+      from: 7,
+      to: 10,
+    },
+    {
+      from: 8,
+      to: 9,
+    },
+  ],
+  'weave-1': [
+    {
+      from: 7,
+      to: 2,
+    },
+    {
+      from: 0,
+      to: 1,
+    },
+    {
+      from: 11,
+      to: 10,
+    },
+    {
+      from: 8,
+      to: 5,
+    },
+    {
+      from: 10,
+      to: 6,
+    },
+    {
+      from: 5,
+      to: 10,
+    },
+    {
+      from: 2,
+      to: 5,
+    },
+    {
+      from: 1,
+      to: 2,
+    },
+    {
+      from: 5,
+      to: 0,
+    },
+    {
+      from: 10,
+      to: 7,
+    },
+    {
+      from: 6,
+      to: 5,
+    },
+    {
+      from: 2,
+      to: 6,
+    },
+    {
+      from: 5,
+      to: 2,
+    },
+    {
+      from: 4,
+      to: 5,
+    },
+    {
+      from: 2,
+      to: 1,
+    },
+    {
+      from: 5,
+      to: 8,
+    },
+    {
+      from: 3,
+      to: 7,
+    },
+    {
+      from: 6,
+      to: 10,
+    },
+    {
+      from: 1,
+      to: 0,
+    },
+    {
+      from: 10,
+      to: 11,
+    },
+    {
+      from: 7,
+      to: 10,
+    },
+    {
+      from: 8,
+      to: 9,
+    },
+    {
+      from: 10,
+      to: 5,
+    },
+    {
+      from: 9,
+      to: 10,
+    },
+  ],
+  'weave-3': [
+    {
+      from: 3,
+      to: 2,
+    },
+    {
+      from: 0,
+      to: 1,
+    },
+    {
+      from: 7,
+      to: 6,
+    },
+    {
+      from: 8,
+      to: 9,
+    },
+    {
+      from: 2,
+      to: 5,
+    },
+    {
+      from: 4,
+      to: 0,
+    },
+    {
+      from: 5,
+      to: 4,
+    },
+    {
+      from: 9,
+      to: 10,
+    },
+    {
+      from: 11,
+      to: 7,
+    },
+    {
+      from: 1,
+      to: 2,
+    },
+    {
+      from: 6,
+      to: 5,
+    },
+    {
+      from: 2,
+      to: 3,
+    },
+    {
+      from: 7,
+      to: 2,
+    },
+    {
+      from: 10,
+      to: 11,
+    },
+  ],
+  'switchyard-1': [
+    {
+      from: 7,
+      to: 6,
+    },
+    {
+      from: 8,
+      to: 4,
+    },
+    {
+      from: 6,
+      to: 9,
+    },
+    {
+      from: 4,
+      to: 1,
+    },
+    {
+      from: 2,
+      to: 7,
+    },
+    {
+      from: 1,
+      to: 2,
+    },
+    {
+      from: 9,
+      to: 8,
+    },
+    {
+      from: 0,
+      to: 1,
+    },
+    {
+      from: 10,
+      to: 9,
+    },
+    {
+      from: 3,
+      to: 8,
+    },
+    {
+      from: 7,
+      to: 6,
+    },
+    {
+      from: 8,
+      to: 4,
+    },
+    {
+      from: 9,
+      to: 8,
+    },
+    {
+      from: 1,
+      to: 2,
+    },
+    {
+      from: 6,
+      to: 9,
+    },
+    {
+      from: 4,
+      to: 3,
+    },
+  ],
+  'switchyard-2': [
+    {
+      from: 2,
+      to: 1,
+    },
+    {
+      from: 3,
+      to: 4,
+    },
+    {
+      from: 7,
+      to: 2,
+    },
+    {
+      from: 4,
+      to: 9,
+    },
+    {
+      from: 2,
+      to: 6,
+    },
+    {
+      from: 8,
+      to: 4,
+    },
+    {
+      from: 6,
+      to: 5,
+    },
+    {
+      from: 9,
+      to: 6,
+    },
+    {
+      from: 5,
+      to: 9,
+    },
+    {
+      from: 6,
+      to: 2,
+    },
+    {
+      from: 9,
+      to: 8,
+    },
+    {
+      from: 4,
+      to: 9,
+    },
+    {
+      from: 10,
+      to: 7,
+    },
+    {
+      from: 9,
+      to: 10,
+    },
+    {
+      from: 7,
+      to: 6,
+    },
+    {
+      from: 0,
+      to: 4,
+    },
+    {
+      from: 6,
+      to: 9,
+    },
+    {
+      from: 4,
+      to: 8,
+    },
+  ],
+  'switchyard-3': [
+    {
+      from: 7,
+      to: 6,
+    },
+    {
+      from: 8,
+      to: 9,
+    },
+    {
+      from: 6,
+      to: 1,
+    },
+    {
+      from: 9,
+      to: 6,
+    },
+    {
+      from: 1,
+      to: 4,
+    },
+    {
+      from: 3,
+      to: 8,
+    },
+    {
+      from: 4,
+      to: 3,
+    },
+    {
+      from: 8,
+      to: 9,
+    },
+    {
+      from: 2,
+      to: 1,
+    },
+    {
+      from: 6,
+      to: 7,
+    },
+    {
+      from: 1,
+      to: 4,
+    },
+    {
+      from: 9,
+      to: 6,
+    },
+  ],
 };

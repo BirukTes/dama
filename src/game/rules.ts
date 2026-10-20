@@ -6,6 +6,7 @@ export interface Move {
   to: number;
 }
 export interface State {
+  retreats?: Record<Side, number>;
   map?: MapId;
   board: (Side | null)[];
   delivered: Record<Side, number>;
@@ -20,10 +21,15 @@ export const goalsFor = (s: State) => mapFor(s.map).goals;
 // Classic exports remain available for the original analysis and puzzle fixtures.
 export const { edges, neighbours } = mapFor('classic');
 export const key = (s: State): string =>
-  `${s.map && s.map !== 'classic' ? `${s.map}|` : ''}${s.board.map((p) => (p === 'blue' ? 'b' : p === 'coral' ? 'c' : '.')).join('')}:${s.delivered.blue}:${s.delivered.coral}:${s.turn}`;
-export function initialState(turn: Side = 'blue', map: MapId = 'classic'): State {
+  `${s.map && s.map !== 'classic' ? `${s.map}|` : ''}${s.board.map((p) => (p === 'blue' ? 'b' : p === 'coral' ? 'c' : '.')).join('')}:${s.delivered.blue}:${s.delivered.coral}:${s.turn}${s.retreats ? `:r${s.retreats.blue}${s.retreats.coral}` : ''}`;
+export function initialState(
+  turn: Side = 'blue',
+  map: MapId = 'classic',
+  oneRetreat = false,
+): State {
   const s: State = {
     ...(map === 'classic' ? {} : { map }),
+    ...(oneRetreat ? { retreats: { blue: 1, coral: 1 } } : {}),
     board: mapFor(map).points.map((_, n) =>
       mapFor(map).starts.blue.includes(n)
         ? 'blue'
@@ -45,10 +51,19 @@ export function legalMoves(s: State, side: Side = s.turn): Move[] {
   return s.board.flatMap((p, from) =>
     p === side
       ? mapFor(s.map)
-          .neighbours[from].filter((to) => s.board[to] === null)
+          .neighbours[from].filter(
+            (to) =>
+              s.board[to] === null &&
+              (!s.retreats || s.retreats[side] > 0 || !isBackward(s, side, { from, to })),
+          )
           .map((to) => ({ from, to }))
       : [],
   );
+}
+export function isBackward(s: State, side: Side, move: Move): boolean {
+  const points = mapFor(s.map).points,
+    dx = points[move.to][0] - points[move.from][0];
+  return side === 'blue' ? dx > 0 : dx < 0;
 }
 export function settle(s: State): State {
   if (s.result) return s;
@@ -72,6 +87,14 @@ export function applyMove(s: State, move: Move): State {
   else board[move.to] = s.turn;
   let next: State = {
     ...(s.map ? { map: s.map } : {}),
+    ...(s.retreats
+      ? {
+          retreats: {
+            ...s.retreats,
+            [s.turn]: s.retreats[s.turn] - Number(isBackward(s, s.turn, move)),
+          },
+        }
+      : {}),
     board,
     delivered,
     turn: other(s.turn),

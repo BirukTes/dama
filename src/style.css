@@ -3519,3 +3519,71 @@ body.home-docked #rival-summary-text {
     font-size: 11px;
   }
 }
+
+/* Nine maps fit in three columns; movement remains a separate Free play choice. */
+#puzzle-pack-select {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+#home-screen .lobby-controls #movement-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  grid-column: 1/-1;
+}
+#movement-field .section-label {
+  margin: 0;
+}
+#movement-select {
+  display: flex;
+  gap: 6px;
+}
+.movement-note {
+  grid-column: 1/-1;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.retreat-count {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.score-track {
+  flex-wrap: wrap;
+}
+@media (min-width: 621px) and (min-height: 561px) {
+  .play-lobby .opponent-card {
+    min-height: 100px;
+    padding: 8px;
+    gap: 4px;
+  }
+  .play-lobby .opponent-card[aria-pressed='true'] {
+    padding: 7px;
+  }
+  .play-lobby .opponent-symbol {
+    font-size: 26px;
+  }
+  .play-lobby .opponent-card strong {
+    font-size: 16px;
+  }
+}
+
+/* Three difficulty choices keep the same quiet radio style and 44px touch height. */
+#home-screen #difficulty-select {
+  gap: 4px;
+}
+#difficulty-field .section-label {
+  font-size: 11px;
+}
+#difficulty-select label > span {
+  gap: 4px;
+  padding-inline: 0;
+  font-size: 11px;
+}
+#difficulty-select label > span::before {
+  flex-basis: 13px;
+  width: 13px;
+  height: 13px;
+}

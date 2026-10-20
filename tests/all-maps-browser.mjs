@@ -11,7 +11,15 @@ const viewports = [
   { width: 1366, height: 768 },
 ];
 try {
-  for (const id of ['ring-road', 'twin-bridges', 'long-crossing', 'islands']) {
+  for (const id of [
+    'ring-road',
+    'twin-bridges',
+    'long-crossing',
+    'islands',
+    'diamond',
+    'weave',
+    'switchyard',
+  ]) {
     const context = await browser.newContext({ viewport: viewports[1], hasTouch: true });
     const page = await context.newPage();
     const errors = [];
@@ -155,7 +163,7 @@ try {
     assert.equal(await page.locator('#board [data-node]').count(), shape.points.length);
     assert.deepEqual(errors, []);
     console.log(
-      `Passed ${id}: drag, Guardian worker, undo/reload, complete local game, six map choices and non-overlapping targets at five sizes in both views.`,
+      `Passed ${id}: drag, Guardian worker, undo/reload, complete local game, nine map choices and non-overlapping targets at five sizes in both views.`,
     );
     await context.close();
   }
